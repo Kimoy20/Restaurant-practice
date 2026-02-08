@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth antialiased;
+  }
+  body {
+    @apply bg-sand-50 text-ocean-900 font-sans;
+  }
+  ::selection {
+    @apply bg-ocean-200/60 text-ocean-900;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-ocean-500 to-ocean-600 text-white font-semibold shadow-island transition-all duration-300 hover:shadow-island-lg hover:from-ocean-600 hover:to-ocean-700 active:scale-[0.98];
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border-2 border-ocean-200 bg-white/80 text-ocean-700 font-semibold backdrop-blur-sm transition-all duration-300 hover:border-ocean-300 hover:bg-ocean-50 active:scale-[0.98];
+  }
+  .card-island {
+    @apply rounded-3xl border border-ocean-100/80 bg-white/90 shadow-island backdrop-blur-sm transition-all duration-300 hover:shadow-island-lg hover:border-ocean-200/80;
+  }
+  .heading-display {
+    @apply font-display text-ocean-900 tracking-tight;
+  }
+}
+
+/* ========== TABLE LANDING: Beach meets ocean ========== */
+.bg-island-page {
+  background-color: #f8f4ef;
+  background-image:
+    /* Soft palm frond texture */
+    url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 5 Q55 25 48 45 Q52 35 50 55 Q48 40 52 65 Q50 55 50 75' stroke='%231a5550' stroke-width='0.6' fill='none' opacity='0.04'/%3E%3Cpath d='M30 10 Q38 30 32 50 Q35 42 30 60' stroke='%231a5550' stroke-width='0.5' fill='none' opacity='0.03'/%3E%3Cpath d='M70 15 Q75 38 68 58 Q72 48 70 70' stroke='%231a5550' stroke-width='0.5' fill='none' opacity='0.03'/%3E%3C/svg%3E"),
+    /* Main gradient: warm sand → soft teal → ocean */
+    linear-gradient(160deg, #faf6f0 0%, #f2ede5 18%, #e8f5f2 42%, #d4ede8 65%, #b8e4dc 88%, #a5ddd4 100%);
+  background-size: 100px 100px, 100% 100%;
+  background-position: 0 0, 0 0;
+  background-repeat: repeat, no-repeat;
+}
+
+/* Layered wave strip at bottom (table page) */
+.wave-bottom {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 200' preserveAspectRatio='none'%3E%3Cpath fill='%23d4ede8' d='M0 120 Q360 80 720 100 T1440 90 L1440 200 L0 200 Z'/%3E%3Cpath fill='%23b8e4dc' fill-opacity='0.9' d='M0 140 Q360 100 720 120 T1440 110 L1440 200 L0 200 Z'/%3E%3Cpath fill='%23a5ddd4' fill-opacity='0.7' d='M0 160 Q360 130 720 145 T1440 135 L1440 200 L0 200 Z'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-position: bottom;
+  background-repeat: no-repeat;
+}
+
+/* ========== MENU / ORDER: Soft sand & sea ========== */
+.bg-island-menu {
+  background-color: #faf6f1;
+  background-image:
+    /* Subtle wave stripes */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 60' preserveAspectRatio='none'%3E%3Cpath d='M0 30 Q100 20 200 30 T400 30' stroke='%231a5550' stroke-width='0.5' fill='none' opacity='0.04'/%3E%3Cpath d='M0 45 Q100 38 200 45 T400 45' stroke='%231a5550' stroke-width='0.4' fill='none' opacity='0.03'/%3E%3Cpath d='M0 15 Q100 22 200 15 T400 15' stroke='%231a5550' stroke-width='0.4' fill='none' opacity='0.03'/%3E%3C/svg%3E"),
+    /* Dots */
+    radial-gradient(circle at 2px 2px, rgba(26, 85, 80, 0.06) 1.5px, transparent 0),
+    /* Mesh-style gradient */
+    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(212, 237, 232, 0.6) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 80% 100%, rgba(184, 228, 220, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 40% at 10% 70%, rgba(245, 241, 235, 0.9) 0%, transparent 45%),
+    linear-gradient(180deg, #fdfbf8 0%, #f6f2ec 28%, #eef8f5 58%, #e2f3ef 85%, #d8f0ea 100%);
+  background-size: 400px 60px, 26px 26px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+  background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+}
+
+/* ========== KITCHEN: Deep ocean ========== */
+.bg-island-kitchen {
+  background-color: #0a2422;
+  background-image:
+    radial-gradient(ellipse 140% 90% at 50% -10%, rgba(26, 85, 80, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 60% at 90% 90%, rgba(26, 85, 80, 0.15) 0%, transparent 45%),
+    radial-gradient(ellipse 60% 80% at 5% 50%, rgba(26, 85, 80, 0.12) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='0.5' fill='%23ffffff' fill-opacity='0.03'/%3E%3C/svg%3E");
+  background-size: 100% 100%, 100% 100%, 100% 100%, 60px 60px;
+  background-position: 0 0, 0 0, 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+}
+
+/* Stagger children animation */
+.stagger > * {
+  animation: slideUp 0.5s ease-out backwards;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger > *:nth-child(6) { animation-delay: 0.3s; }
