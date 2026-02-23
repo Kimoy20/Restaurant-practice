@@ -16,16 +16,46 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-ocean-500 to-ocean-600 text-white font-semibold shadow-island transition-all duration-300 hover:shadow-island-lg hover:from-ocean-600 hover:to-ocean-700 active:scale-[0.98];
+    @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-ocean-500 via-ocean-600 to-ocean-700 text-white font-semibold shadow-island transition-all duration-300 hover:shadow-island-lg hover:from-ocean-600 hover:to-ocean-800 active:scale-[0.98] border border-white/20;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center rounded-xl border-2 border-ocean-200 bg-white/80 text-ocean-700 font-semibold backdrop-blur-sm transition-all duration-300 hover:border-ocean-300 hover:bg-ocean-50 active:scale-[0.98];
   }
   .card-island {
-    @apply rounded-3xl border border-ocean-100/80 bg-white/90 shadow-island backdrop-blur-sm transition-all duration-300 hover:shadow-island-lg hover:border-ocean-200/80;
+    @apply rounded-3xl border border-ocean-100/80 bg-white/95 shadow-island backdrop-blur-sm transition-all duration-300 hover:shadow-island-lg hover:border-ocean-300/80;
   }
   .heading-display {
     @apply font-display text-ocean-900 tracking-tight;
+  }
+  
+  .receipt-paper {
+    background: #fff;
+    background-image: 
+      linear-gradient(90deg, transparent 40px, #abced4 40px, #abced4 42px, transparent 42px),
+      linear-gradient(#eee .1em, transparent .1em);
+    background-size: 100% 100%, 100% 1.5rem;
+    position: relative;
+    box-shadow: 0 20px 50px -10px rgba(0,0,0,0.1);
+  }
+
+  .receipt-paper::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: radial-gradient(circle, transparent, transparent 50%, #fff 50%, #fff) 0 0 / 20px 20px repeat-x;
+  }
+
+  .receipt-paper::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: radial-gradient(circle, transparent, transparent 50%, #fff 50%, #fff) 0 10px / 20px 20px repeat-x;
   }
 }
 

@@ -113,14 +113,39 @@ export default function KitchenDisplay() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-5 md:p-8">
-      <header className="mb-8">
-        <div className="flex items-center gap-3 mb-1">
-          <span className="text-2xl" aria-hidden>🍳</span>
-          <h1 className="text-2xl md:text-3xl font-bold text-blue-100">
-            Siaro Kaw — Kitchen
-          </h1>
+      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center border border-blue-400/30">
+              <span className="text-2xl" aria-hidden>👨‍🍳</span>
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+                Kitchen Dashboard
+              </h1>
+              <p className="text-blue-400 text-xs font-black uppercase tracking-[0.2em]">
+                Siaro Kaw — Local BBQ & More
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 max-w-xl">
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Welcome to the heart of Siaro Kaw. This dashboard provides real-time updates for all active orders. 
+              Manage incoming tickets, track preparation status, and ensure every guest gets their Siargao feast 
+              at its freshest.
+            </p>
+          </div>
         </div>
-        <p className="text-blue-300/80 text-sm font-medium">Real-time orders · Siargao</p>
+        <div className="flex gap-4">
+          <div className="px-5 py-3 rounded-2xl bg-slate-800 border border-slate-700/50">
+            <p className="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-1">Active Tickets</p>
+            <p className="text-2xl font-black text-blue-100">{orders.length}</p>
+          </div>
+          <div className="px-5 py-3 rounded-2xl bg-slate-800 border border-slate-700/50 text-right">
+            <p className="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-1">Status</p>
+            <p className="text-sm font-black text-emerald-400 uppercase">Live & Connected</p>
+          </div>
+        </div>
       </header>
 
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">

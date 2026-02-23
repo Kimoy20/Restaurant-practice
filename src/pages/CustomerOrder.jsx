@@ -3,15 +3,25 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import MenuGrid from "../MenuGrid";
 import CartDrawer from "../CartDrawer";
+import Receipt from "../Receipt";
+import CustomerDrawer from "../CustomerDrawer";
 
 export default function CustomerOrder() {
   const { tableId } = useParams();
+  const userRole = localStorage.getItem('user_role');
+  const isCustomer = userRole === 'customer';
   const [table, setTable] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [orderSent, setOrderSent] = useState(false);
+  const [hasActiveOrder, setHasActiveOrder] = useState(false);
+  const [isTakenByOther, setIsTakenByOther] = useState(false);
+  const [sessionOrders, setSessionOrders] = useState([]);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [submittedOrder, setSubmittedOrder] = useState(null);
+  const [showOrderSuccess, setShowOrderSuccess] = useState(false);
 
   const mockMenuItems = [
     {
@@ -52,43 +62,99 @@ export default function CustomerOrder() {
     const loadData = async () => {
       try {
         if (!supabase) {
-          setTable({ id: "1", slug: tableId, name: `${tableId}` });
+          setTable({ id: "1", slug: tableId, name: `Table ${tableId}` });
           setMenuItems(mockMenuItems);
           setLoading(false);
           return;
         }
 
-        const { data: tableData, error: tableError } = await supabase
-          .from("tables")
-          .select("id, slug, name")
-          .eq("slug", tableId)
-          .single();
+        let tableData = null;
+        let tableError = null;
+        let menuData = null;
 
-        const { data: menuData, error: menuError } = await supabase
-          .from("menu_items")
-          .select("*")
-          .eq("is_available", true);
+        try {
+          const { data: tData, error: tErr } = await supabase
+            .from("tables")
+            .select("id, slug, name")
+            .eq("slug", tableId)
+            .single();
+          tableData = tData;
+          tableError = tErr;
 
-        if (tableData) setTable(tableData);
-        if (menuData && menuData.length > 0) {
-          setMenuItems(menuData);
+          const { data: mData } = await supabase
+            .from("menu_items")
+            .select("*")
+            .eq("is_available", true);
+          menuData = mData;
+        } catch (e) {
+          console.error("Supabase fetch error:", e);
+        }
+
+        let currentTable = tableData;
+        if (tableError || !tableData) {
+          console.warn("Table fetch issue, using fallback:", tableError);
+          // Standard mapping: slug table-1 -> id 1, table-2 -> id 2 ...
+          const numericId = tableId.split('-')[1] || "1";
+          currentTable = { id: numericId, slug: tableId, name: `Table ${numericId}` };
+        }
+        setTable(currentTable);
+
+        const currentActiveOrders = JSON.parse(localStorage.getItem('my_active_orders') || '[]');
+        const tableSessionOrders = currentActiveOrders.filter(o => o.tableId === tableId);
+        setSessionOrders(tableSessionOrders);
+
+        // Only query active orders if we have a table ID
+        let activeOrderData = null;
+        if (supabase && currentTable?.id) {
+          try {
+            const { data } = await supabase
+              .from("orders")
+              .select("id")
+              .eq("table_id", currentTable.id)
+              .in("status", ["pending", "preparing", "ready"])
+              .limit(1);
+            activeOrderData = data;
+          } catch (e) {
+            console.error("Active order fetch error:", e);
+          }
+        }
+
+        if (activeOrderData && activeOrderData.length > 0) {
+          const activeOrderId = activeOrderData[0].id;
+          const isActiveForMe = currentActiveOrders.some(o => (o.id === activeOrderId || o === activeOrderId));
+          setHasActiveOrder(isActiveForMe || tableSessionOrders.length > 0);
+          setIsTakenByOther(!isActiveForMe && tableSessionOrders.length === 0);
         } else {
-          // Fallback to mock items if query returns empty
-          setMenuItems(mockMenuItems);
+          setHasActiveOrder(tableSessionOrders.length > 0);
+          setIsTakenByOther(false);
+        }
+
+        const savedCustomItems = JSON.parse(localStorage.getItem('custom_menu_items') || '[]');
+        if (menuData && menuData.length > 0) {
+          setMenuItems([...menuData, ...savedCustomItems]);
+        } else {
+          setMenuItems([...mockMenuItems, ...savedCustomItems]);
         }
         setLoading(false);
       } catch (err) {
-        console.error("Error loading menu:", err);
-        setTable({ id: "1", slug: tableId, name: `${tableId}` });
-        setMenuItems(mockMenuItems);
+        console.error("Error loading data:", err);
+        const savedCustomItems = JSON.parse(localStorage.getItem('custom_menu_items') || '[]');
+        setMenuItems([...mockMenuItems, ...savedCustomItems]);
         setLoading(false);
       }
     };
     loadData();
   }, [tableId]);
 
+  const handleAddNewItem = (newItem) => {
+    setMenuItems((prev) => [...prev, newItem]);
+    const localCustomItems = JSON.parse(localStorage.getItem('custom_menu_items') || '[]');
+    localStorage.setItem('custom_menu_items', JSON.stringify([...localCustomItems, newItem]));
+  };
+
   const addToCart = (item) => {
     setCart((prev) => {
+      const quantityToAdd = 1; // You can pass actual qty here if needed
       const existing = prev.find((i) => i.id === item.id);
       if (existing)
         return prev.map((i) =>
@@ -110,21 +176,98 @@ export default function CustomerOrder() {
   };
 
   const submitOrder = async () => {
-    if (!supabase) {
-      setOrderSent(true);
-      setTimeout(() => {
-        setOrderSent(false);
-        setCart([]);
-      }, 2000);
+    const orderId = Math.floor(1000 + Math.random() * 9000).toString();
+    const orderData = {
+      id: orderId,
+      items: [...cart],
+      total: cart.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0),
+      tableId: tableId,
+      timestamp: new Date().toISOString()
+    };
+
+    // Save order ID to localStorage to track "ownership"
+    const myOrders = JSON.parse(localStorage.getItem('my_active_orders') || '[]');
+    const newOrder = { id: orderId, tableId: tableId, items: [...cart], timestamp: orderData.timestamp };
+    localStorage.setItem('my_active_orders', JSON.stringify([...myOrders, newOrder]));
+
+    // Also update manual status to "occupied" so it reflects everywhere
+    const manualStatuses = JSON.parse(localStorage.getItem('manual_table_statuses') || '{}');
+    if (table?.id) {
+      manualStatuses[table.id] = 'occupied';
+      localStorage.setItem('manual_table_statuses', JSON.stringify(manualStatuses));
+    }
+
+    setSessionOrders(prev => [...prev, newOrder]);
+    setCart([]);
+    setCartOpen(false);
+    setHasActiveOrder(true);
+    setShowOrderSuccess(true);
+    setTimeout(() => setShowOrderSuccess(false), 3000);
+
+    if (supabase) {
+      // TODO: Submit order to Supabase
+    }
+  };
+
+  const handleCheckout = () => {
+    console.log("Handle checkout initiated. sessionOrders:", sessionOrders);
+    if (!sessionOrders || sessionOrders.length === 0) {
+      alert("No orders to checkout yet!");
       return;
     }
 
-    // TODO: Submit order to Supabase
-    setOrderSent(true);
-    setTimeout(() => {
-      setOrderSent(false);
-      setCart([]);
-    }, 2000);
+    // Aggregate ALL items from ALL orders in this session
+    const allItems = [];
+    const itemMap = new Map();
+
+    sessionOrders.forEach(order => {
+      order.items.forEach(item => {
+        if (itemMap.has(item.id)) {
+          const existing = itemMap.get(item.id);
+          existing.quantity += item.quantity;
+        } else {
+          itemMap.set(item.id, { ...item });
+        }
+      });
+    });
+
+    const finalOrder = {
+      id: "BILL-" + tableId + "-" + Date.now().toString().slice(-4),
+      items: Array.from(itemMap.values()),
+      total: Array.from(itemMap.values()).reduce((sum, i) => sum + i.price * i.quantity, 0),
+      tableId: tableId,
+      tableName: table?.name || `Table ${tableId.split('-')[1] || ''}`,
+      timestamp: new Date().toISOString()
+    };
+
+    setSubmittedOrder(finalOrder);
+    setIsCheckingOut(true);
+  };
+
+  const finalizeCheckout = () => {
+    // Record this order globally for sales tracking
+    if (submittedOrder) {
+      const globalOrders = JSON.parse(localStorage.getItem('global_completed_orders') || '[]');
+      localStorage.setItem('global_completed_orders', JSON.stringify([...globalOrders, submittedOrder]));
+    }
+
+    // Clear local session for THIS table
+    const myOrders = JSON.parse(localStorage.getItem('my_active_orders') || '[]');
+    const remainingOrders = myOrders.filter(o => o.tableId !== tableId);
+    localStorage.setItem('my_active_orders', JSON.stringify(remainingOrders));
+
+    // Reset manual status if it was occupied
+    const manualStatuses = JSON.parse(localStorage.getItem('manual_table_statuses') || '{}');
+    if (table?.id) {
+      delete manualStatuses[table.id];
+      localStorage.setItem('manual_table_statuses', JSON.stringify(manualStatuses));
+    }
+
+    setSubmittedOrder(null);
+    setSessionOrders([]);
+    setHasActiveOrder(false);
+    setIsCheckingOut(false);
+    window.location.href = '/table';
   };
 
   const cartTotal = cart.reduce(
@@ -137,29 +280,28 @@ export default function CustomerOrder() {
     return (
       <div className="min-h-screen bg-island-page flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-2 border-ocean-300 border-t-ocean-600 animate-spin" />
-          <p className="text-ocean-700 font-medium">Loading menu…</p>
+          <div className="w-16 h-16 rounded-full border-4 border-ocean-100 border-t-ocean-600 animate-spin" />
+          <p className="text-ocean-700 font-bold tracking-widest uppercase text-xs">Loading Menu</p>
         </div>
       </div>
     );
   }
 
-  if (orderSent) {
+  if (isTakenByOther) {
     return (
-      <div className="min-h-screen bg-island-page flex items-center justify-center px-4">
-        <div className="text-center">
-          <div className="text-6xl mb-4">✨</div>
-          <h1 className="text-3xl md:text-4xl font-bold text-ocean-900 mb-2">
-            Salamat!
-          </h1>
-          <p className="text-ocean-700 mb-6">
-            Your order has been sent to the kitchen
+      <div className="min-h-screen bg-island-page flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md bg-white/90 backdrop-blur-xl p-10 rounded-[3rem] border-2 border-white shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sand-400 via-palm to-sand-400"></div>
+          <span className="text-7xl mb-6 block">🔒</span>
+          <h1 className="text-3xl font-black text-ocean-950 mb-4 tracking-tight">Table is taken</h1>
+          <p className="text-ocean-700 font-medium leading-relaxed mb-8">
+            This table currently has an active order. If you're with this group, please ask them to add to their order!
           </p>
-          <button
-            onClick={() => setOrderSent(false)}
-            className="btn-primary px-8 py-3 rounded-2xl"
+          <button 
+            onClick={() => window.location.href = '/table'}
+            className="w-full btn-secondary py-4"
           >
-            Order More
+            Choose another table
           </button>
         </div>
       </div>
@@ -169,46 +311,81 @@ export default function CustomerOrder() {
   return (
     <div className="min-h-screen bg-island-page">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b-2 border-ocean-100/50 shadow-sm">
+      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-ocean-100/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           {/* Back Button */}
           <Link
-            to="/table"
-            className="inline-flex items-center gap-2 text-ocean-700 hover:text-ocean-900 font-semibold transition-colors group"
+            to={localStorage.getItem('user_role') === 'customer' ? '/about' : '/table'}
+            className="inline-flex items-center gap-2 text-ocean-700 hover:text-palm font-bold transition-all group"
           >
-            <span className="text-2xl group-hover:-translate-x-1 transition-transform">
-              ←
-            </span>
-            <span className="hidden sm:inline">Back</span>
+            <div className="w-10 h-10 rounded-xl bg-ocean-50 flex items-center justify-center group-hover:bg-ocean-100 group-hover:-translate-x-1 transition-all">
+              <span className="text-xl">←</span>
+            </div>
           </Link>
 
-          {/* Table Info */}
-          <div className="text-center">
-            <h1 className="heading-display text-2xl sm:text-3xl text-ocean-900">
+          {/* Table Info & Actions */}
+          <div className="text-center flex flex-col items-center gap-1">
+            <h1 className="heading-display text-2xl sm:text-4xl text-ocean-950 font-black">
               {table?.name || "Siaro Kaw"}
             </h1>
-            <p className="text-sm text-ocean-600 font-medium">
-              Pick your favorites
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-[10px] text-ocean-400 font-black uppercase tracking-[0.2em]">
+                {hasActiveOrder ? "Dugang Order — Add More" : "Island BBQ & Kitchen"}
+              </p>
+              {!isCustomer && hasActiveOrder && (
+                <button
+                  onClick={handleCheckout}
+                  className="bg-palm/10 text-palm hover:bg-palm hover:text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all border border-palm/20"
+                >
+                  Done Eating 🍽️
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Cart Button */}
-          <button
-            onClick={() => setCartOpen(true)}
-            className="relative inline-flex items-center gap-2 bg-gradient-to-r from-ocean-500 to-ocean-600 text-white font-bold px-5 py-2.5 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:from-ocean-600 hover:to-ocean-700 active:scale-95"
-          >
-            <span className="text-lg">🛒</span>
-            <span className="hidden sm:inline">Cart</span>
-            <span className="inline-flex items-center justify-center min-w-6 h-6 ml-1 bg-white/30 rounded-full text-xs font-bold">
-              {cartCount}
-            </span>
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Cart Button - Only for Owners */}
+            {!isCustomer && (
+              <button
+                onClick={() => setCartOpen(true)}
+                className="relative inline-flex items-center gap-2 bg-gradient-to-br from-ocean-500 via-ocean-600 to-ocean-800 text-white font-black px-6 py-3 rounded-2xl shadow-lg border border-white/20 hover:shadow-ocean-200/50 hover:scale-[1.02] active:scale-95 transition-all"
+              >
+                <span className="text-xl">🛒</span>
+                <span className="hidden sm:inline text-xs uppercase tracking-wider">My Plate</span>
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-palm text-[10px] text-white ring-4 ring-white shadow-lg animate-fade-in">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* Burger Menu Button */}
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="w-12 h-12 rounded-2xl bg-white/40 backdrop-blur-xl flex flex-col items-center justify-center gap-1.5 hover:bg-ocean-50/80 transition-all border border-ocean-100/50 group shadow-sm ml-2"
+            >
+              <div className="w-5 h-[2.5px] bg-ocean-900 rounded-full group-hover:bg-palm transition-colors"></div>
+              <div className="w-5 h-[2.5px] bg-ocean-900 rounded-full group-hover:bg-palm transition-colors"></div>
+              <div className="w-3 h-[2.5px] bg-ocean-900 rounded-full self-start ml-3.5 group-hover:bg-palm transition-colors mt-[-1px]"></div>
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Menu Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <MenuGrid items={menuItems} onAdd={addToCart} />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12 relative">
+        {showOrderSuccess && (
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-palm text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/20 animate-bounce">
+            <span className="text-xl">✅</span>
+            <span className="text-xs font-black uppercase tracking-widest">Order sent to kitchen!</span>
+          </div>
+        )}
+        <MenuGrid 
+          items={menuItems} 
+          onAdd={isCustomer ? undefined : addToCart} 
+          onAddNewItem={isCustomer ? undefined : handleAddNewItem} 
+        />
       </main>
 
       {/* Cart Drawer */}
@@ -216,9 +393,21 @@ export default function CustomerOrder() {
         open={cartOpen}
         onClose={() => setCartOpen(false)}
         cart={cart}
+        sessionOrders={sessionOrders}
         onUpdateQty={updateQuantity}
         onSubmit={submitOrder}
       />
+
+      {/* Receipt View */}
+      {submittedOrder && (
+        <Receipt 
+          order={submittedOrder} 
+          onClose={finalizeCheckout} 
+        />
+      )}
+
+      {/* Customer Drawer */}
+      <CustomerDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} tableId={tableId} />
     </div>
   );
 }
