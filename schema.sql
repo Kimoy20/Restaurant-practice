@@ -1,6 +1,16 @@
 -- Siaro Kaw – Restaurant Management (Supabase)
 -- Run in Supabase SQL Editor
 
+-- Users table for authentication
+create table if not exists public.users (
+  id uuid primary key default gen_random_uuid(),
+  email text unique not null,
+  password text not null,
+  role text not null check (role in ('customer', 'owner')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 -- Tables (for dine-in QR ordering + KDS)
 create table if not exists public.tables (
   id uuid primary key default gen_random_uuid(),
@@ -41,15 +51,23 @@ create table if not exists public.order_items (
 );
 
 -- Indexes for real-time and list performance
+create index if not exists idx_users_email on public.users(email);
 create index if not exists idx_orders_table_id on public.orders(table_id);
 create index if not exists idx_orders_status_created on public.orders(status, created_at desc);
 create index if not exists idx_order_items_order_id on public.order_items(order_id);
 
 -- RLS: allow anonymous read for menu + tables; allow insert for orders (dine-in); kitchen can update
+alter table public.users enable row level security;
 alter table public.tables enable row level security;
 alter table public.menu_items enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
+
+create policy "Users are readable by everyone"
+  on public.users for select using (true);
+
+create policy "Anyone can create users"
+  on public.users for insert with check (true);
 
 create policy "Tables are readable by everyone"
   on public.tables for select using (true);

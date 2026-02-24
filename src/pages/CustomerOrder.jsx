@@ -245,51 +245,107 @@ export default function CustomerOrder() {
   };
 
   const submitOrder = async () => {
-    const orderId = Math.floor(1000 + Math.random() * 9000).toString();
-    const orderData = {
-      id: orderId,
-      items: [...cart],
-      total: cart.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0),
-      tableId: tableId,
-      timestamp: new Date().toISOString(),
-    };
-
-    // Save order ID to localStorage to track "ownership"
-    const myOrders = JSON.parse(
-      localStorage.getItem("my_active_orders") || "[]",
-    );
-    const newOrder = {
-      id: orderId,
-      tableId: tableId,
-      items: [...cart],
-      timestamp: orderData.timestamp,
-    };
-    localStorage.setItem(
-      "my_active_orders",
-      JSON.stringify([...myOrders, newOrder]),
-    );
-
-    // Also update manual status to "occupied" so it reflects everywhere
-    const manualStatuses = JSON.parse(
-      localStorage.getItem("manual_table_statuses") || "{}",
-    );
-    if (table?.id) {
-      manualStatuses[table.id] = "occupied";
-      localStorage.setItem(
-        "manual_table_statuses",
-        JSON.stringify(manualStatuses),
-      );
+    if (!table?.id || cart.length === 0) {
+      alert("Cannot submit order: missing table or cart is empty.");
+      return;
     }
 
-    setSessionOrders((prev) => [...prev, newOrder]);
-    setCart([]);
-    setCartOpen(false);
-    setHasActiveOrder(true);
-    setShowOrderSuccess(true);
-    setTimeout(() => setShowOrderSuccess(false), 3000);
+    const orderId = crypto.randomUUID();
+    const total = cart.reduce(
+      (sum, i) => sum + Number(i.price) * i.quantity,
+      0,
+    );
 
-    if (supabase) {
-      // TODO: Submit order to Supabase
+    // Prepare main order data for Supabase
+    const orderPayload = {
+      id: orderId,
+      table_id: table.id,
+      status: "pending",
+    };
+
+    console.log(
+      "Submitting main order to Supabase with payload:",
+      orderPayload,
+    );
+
+    try {
+      // 1️⃣ Insert main order into orders table
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .insert([orderPayload])
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error("Supabase order insert error:", orderError);
+        alert(
+          `Failed to save order: ${orderError.message || JSON.stringify(orderError)}`,
+        );
+        return;
+      }
+
+      console.log("Main order successfully saved to Supabase ✅", orderData);
+
+      // 2️⃣ Insert each item into order_items table
+      const itemsToInsert = cart.map((item) => ({
+        order_id: orderData.id,
+        menu_item_id: item.id,
+        quantity: item.quantity,
+        notes: "",
+      }));
+
+      console.log("Inserting order items:", itemsToInsert);
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(itemsToInsert);
+
+      if (itemsError) {
+        console.error("Order items insert error:", itemsError);
+        alert(
+          `Failed to save order items: ${itemsError.message || JSON.stringify(itemsError)}`,
+        );
+        return;
+      }
+
+      console.log("Order items successfully saved to Supabase ✅");
+
+      // Save order ID to localStorage to track "ownership"
+      const myOrders = JSON.parse(
+        localStorage.getItem("my_active_orders") || "[]",
+      );
+      const newOrder = {
+        id: orderId,
+        tableId: tableId,
+        items: [...cart],
+        timestamp: orderPayload.timestamp,
+      };
+      localStorage.setItem(
+        "my_active_orders",
+        JSON.stringify([...myOrders, newOrder]),
+      );
+
+      // Also update manual status to "occupied" so it reflects everywhere
+      const manualStatuses = JSON.parse(
+        localStorage.getItem("manual_table_statuses") || "{}",
+      );
+      if (table?.id) {
+        manualStatuses[table.id] = "occupied";
+        localStorage.setItem(
+          "manual_table_statuses",
+          JSON.stringify(manualStatuses),
+        );
+      }
+
+      setSessionOrders((prev) => [...prev, newOrder]);
+      setCart([]);
+      setCartOpen(false);
+      setHasActiveOrder(true);
+      setShowOrderSuccess(true);
+      setTimeout(() => setShowOrderSuccess(false), 3000);
+    } catch (err) {
+      console.error("Unexpected error during order submission:", err);
+      alert(`Unexpected error: ${err.message || JSON.stringify(err)}`);
     }
   };
 

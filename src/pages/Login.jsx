@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { hashPassword, verifyPassword } from "../lib/crypto";
 
 export default function Login() {
   const [role, setRole] = useState(null);
@@ -9,58 +11,83 @@ export default function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (isRegister) {
-      // Create account
-      const users = JSON.parse(
-        localStorage.getItem("registered_users") || "{}",
-      );
-      if (users[email]) {
-        setError("Email already exists. Please sign in.");
-        return;
-      }
-      users[email] = { password, role };
-      localStorage.setItem("registered_users", JSON.stringify(users));
-      localStorage.setItem("current_user", email);
-      localStorage.setItem("user_role", role);
-      navigate(role === "customer" ? "/customer-tables" : "/table", {
-        replace: true,
-      });
-    } else {
-      // Login
-      const users = JSON.parse(
-        localStorage.getItem("registered_users") || "{}",
-      );
+    try {
+      if (isRegister) {
+        // Create account
+        const { data: existingUser } = await supabase
+          .from("users")
+          .select("email")
+          .eq("email", email)
+          .single();
 
-      // Default admin backdoor just in case
-      if (email === "admin@siarokaw.com" && password === "admin") {
+        if (existingUser) {
+          setError("Email already exists. Please sign in.");
+          return;
+        }
+
+        const hashedPassword = await hashPassword(password);
+        const { data, error } = await supabase
+          .from("users")
+          .insert([{ email, password: hashedPassword, role }])
+          .select();
+
+        if (error) {
+          setError("Registration failed. Please try again.");
+          return;
+        }
+
         localStorage.setItem("current_user", email);
-        localStorage.setItem("user_role", "owner");
-        navigate("/table", { replace: true });
-        return;
-      }
+        localStorage.setItem("user_role", role);
+        navigate(role === "customer" ? "/customer-tables" : "/table", {
+          replace: true,
+        });
+      } else {
+        // Login
+        // Default admin backdoor just in case
+        if (email === "admin@siarokaw.com" && password === "admin") {
+          localStorage.setItem("current_user", email);
+          localStorage.setItem("user_role", "owner");
+          navigate("/table", { replace: true });
+          return;
+        }
 
-      if (!users[email] || users[email].password !== password) {
-        setError("Invalid email or password.");
-        return;
-      }
+        const { data: user, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("email", email)
+          .single();
 
-      // Check if the role matches the registered role
-      if (users[email].role !== role) {
-        setError(
-          `This account is registered as an ${users[email].role}. Please select the correct role.`,
-        );
-        return;
-      }
+        if (error || !user) {
+          setError("Invalid email or password.");
+          return;
+        }
 
-      localStorage.setItem("current_user", email);
-      localStorage.setItem("user_role", role);
-      navigate(role === "customer" ? "/customer-tables" : "/table", {
-        replace: true,
-      });
+        const isValidPassword = await verifyPassword(password, user.password);
+        if (!isValidPassword) {
+          setError("Invalid email or password.");
+          return;
+        }
+
+        // Check if the role matches the registered role
+        if (user.role !== role) {
+          setError(
+            `This account is registered as an ${user.role}. Please select the correct role.`,
+          );
+          return;
+        }
+
+        localStorage.setItem("current_user", email);
+        localStorage.setItem("user_role", role);
+        navigate(role === "customer" ? "/customer-tables" : "/table", {
+          replace: true,
+        });
+      }
+    } catch (err) {
+      setError("An error occurred. Please try again.");
     }
   };
 
