@@ -18,11 +18,17 @@ export default function Login() {
     try {
       if (isRegister) {
         // Create account
-        const { data: existingUser } = await supabase
+        const { data: existingUser, error: checkError } = await supabase
           .from("users")
           .select("email")
           .eq("email", email)
-          .single();
+          .maybeSingle();
+
+        if (checkError && checkError.code !== "PGRST116") {
+          console.error("Check error:", checkError);
+          setError("Registration failed. Please try again.");
+          return;
+        }
 
         if (existingUser) {
           setError("Email already exists. Please sign in.");
@@ -32,11 +38,19 @@ export default function Login() {
         const hashedPassword = await hashPassword(password);
         const { data, error } = await supabase
           .from("users")
-          .insert([{ email, password: hashedPassword, role }])
+          .insert([
+            {
+              id: crypto.randomUUID(),
+              email,
+              password: hashedPassword,
+              role,
+            },
+          ])
           .select();
 
         if (error) {
-          setError("Registration failed. Please try again.");
+          console.error("Registration error:", error);
+          setError(`Registration failed: ${error.message}`);
           return;
         }
 
@@ -59,9 +73,15 @@ export default function Login() {
           .from("users")
           .select("*")
           .eq("email", email)
-          .single();
+          .maybeSingle();
 
-        if (error || !user) {
+        if (error && error.code !== "PGRST116") {
+          console.error("Login error:", error);
+          setError("An error occurred. Please try again.");
+          return;
+        }
+
+        if (!user) {
           setError("Invalid email or password.");
           return;
         }
@@ -87,7 +107,8 @@ export default function Login() {
         });
       }
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      console.error("Submit error:", err);
+      setError(`An error occurred: ${err.message}`);
     }
   };
 
