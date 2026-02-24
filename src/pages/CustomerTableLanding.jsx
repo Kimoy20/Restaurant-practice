@@ -188,7 +188,7 @@ export default function CustomerTableLanding() {
             <p>Loading tables…</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full max-w-3xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 w-full max-w-3xl mx-auto">
             {tables.map((t, i) => {
               const vibe = TABLE_VIBES[i % TABLE_VIBES.length];
               const status = getTableStatus(t);

@@ -48,25 +48,27 @@ export default function TableLanding() {
   const [activeTableOrders, setActiveTableOrders] = useState({}); // tableId -> list of active order IDs
   const [loading, setLoading] = useState(true);
   const [manualStatuses, setManualStatuses] = useState(() => {
-    return JSON.parse(localStorage.getItem('manual_table_statuses') || '{}');
+    return JSON.parse(localStorage.getItem("manual_table_statuses") || "{}");
   });
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [passwordInputs, setPasswordInputs] = useState({});
   const [tablePasswords, setTablePasswords] = useState(() => {
-    return JSON.parse(localStorage.getItem('table_passwords') || '{}');
+    return JSON.parse(localStorage.getItem("table_passwords") || "{}");
   });
 
   const handleSetPassword = async (tableId, tableName) => {
-    const val = parseInt(passwordInputs[tableId] || '', 10);
+    const val = parseInt(passwordInputs[tableId] || "", 10);
     if (!val || val < 1 || val > 100) {
-      alert('Please enter a number between 1 and 100.');
+      alert("Please enter a number between 1 and 100.");
       return;
     }
     const result = await savePin(tableId, val);
     const updated = { ...tablePasswords, [tableId]: String(val) };
     setTablePasswords(updated);
-    setPasswordInputs(prev => ({ ...prev, [tableId]: '' }));
-    alert(`✔ Password for ${tableName} set to ${val}${result.source === 'supabase' ? ' (synced to cloud ☁️)' : ' (saved locally)'}`);
+    setPasswordInputs((prev) => ({ ...prev, [tableId]: "" }));
+    alert(
+      `✔ Password for ${tableName} set to ${val}${result.source === "supabase" ? " (synced to cloud ☁️)" : " (saved locally)"}`,
+    );
   };
 
   const handleClearPassword = async (tableId) => {
@@ -112,7 +114,10 @@ export default function TableLanding() {
           .in("status", ["pending", "preparing", "ready"]);
 
         if (tableError) {
-          console.warn("Supabase table fetch error, using mock data:", tableError);
+          console.warn(
+            "Supabase table fetch error, using mock data:",
+            tableError,
+          );
           setTables(mockTables);
           setActiveTableOrders({});
         } else if (tableData && tableData.length > 0) {
@@ -128,7 +133,7 @@ export default function TableLanding() {
 
         if (!orderError && orderData && orderData.length > 0) {
           const tableOrders = {};
-          orderData.forEach(o => {
+          orderData.forEach((o) => {
             if (!tableOrders[o.table_id]) tableOrders[o.table_id] = [];
             tableOrders[o.table_id].push(o.id);
           });
@@ -151,7 +156,7 @@ export default function TableLanding() {
   const handleManualStatusChange = (tableId, status) => {
     const newStatuses = { ...manualStatuses, [tableId]: status };
     setManualStatuses(newStatuses);
-    localStorage.setItem('manual_table_statuses', JSON.stringify(newStatuses));
+    localStorage.setItem("manual_table_statuses", JSON.stringify(newStatuses));
   };
 
   const getTableStatus = (table) => {
@@ -160,21 +165,26 @@ export default function TableLanding() {
     if (manualStatuses[table.id] === "available") return "available";
 
     const activeOrderIds = activeTableOrders[table.id] || [];
-    const myActiveOrders = JSON.parse(localStorage.getItem('my_active_orders') || '[]');
-    
+    const myActiveOrders = JSON.parse(
+      localStorage.getItem("my_active_orders") || "[]",
+    );
+
     // Check if I have a local session for this table (even if not synced/mock)
-    const hasLocalSession = myActiveOrders.some(o => 
-      (o.tableId === table.id || o.tableId === table.slug) || (typeof o === 'string' && activeOrderIds.includes(o))
+    const hasLocalSession = myActiveOrders.some(
+      (o) =>
+        o.tableId === table.id ||
+        o.tableId === table.slug ||
+        (typeof o === "string" && activeOrderIds.includes(o)),
     );
 
     if (activeOrderIds.length === 0) {
       return hasLocalSession ? "my_session" : "available";
     }
 
-    const isMine = activeOrderIds.some(id => 
-      myActiveOrders.some(mo => mo.id === id || mo === id)
+    const isMine = activeOrderIds.some((id) =>
+      myActiveOrders.some((mo) => mo.id === id || mo === id),
     );
-    
+
     return isMine ? "my_session" : "taken";
   };
 
@@ -206,10 +216,10 @@ export default function TableLanding() {
           </p>
           <div className="bg-white/40 backdrop-blur-sm rounded-[2rem] p-6 border border-white/40 shadow-inner">
             <p className="text-sand-700 text-sm md:text-base leading-relaxed font-medium">
-              Welcome to Siaro Kaw, where island tradition meets modern flavors. 
-              Our kitchen celebrates Siargao's rich bounties—from the freshest morning catch to our 
-              signature wood-fired BBQ. Relax, soak in the breeze, and choose your spot below 
-              to begin your island feast.
+              Welcome to Siaro Kaw, where island tradition meets modern flavors.
+              Our kitchen celebrates Siargao's rich bounties—from the freshest
+              morning catch to our signature wood-fired BBQ. Relax, soak in the
+              breeze, and choose your spot below to begin your island feast.
             </p>
           </div>
           <div className="mt-8 flex items-center justify-center gap-3">
@@ -227,51 +237,75 @@ export default function TableLanding() {
             <p>Loading tables…</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full max-w-3xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 w-full max-w-3xl mx-auto">
             {tables.map((t, i) => {
               const vibe = TABLE_VIBES[i % TABLE_VIBES.length];
               const status = getTableStatus(t);
-              
+
               const isTaken = status === "taken";
               const isMySession = status === "my_session";
 
               return (
-                <div key={t.id} className="relative group bg-white/95 rounded-[2.5rem] border-2 border-white shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl overflow-hidden flex flex-col">
+                <div
+                  key={t.id}
+                  className="relative group bg-white/95 rounded-[2.5rem] border-2 border-white shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl overflow-hidden flex flex-col"
+                >
                   {/* Upper clickable area */}
                   <Link
                     to={isTaken ? "#" : `/order/${t.slug}`}
                     className={`block flex-1 ${isTaken ? "opacity-75 cursor-not-allowed" : ""}`}
                     onClick={(e) => isTaken && e.preventDefault()}
                   >
-                    <div className={`p-8 pt-10 pb-6 text-center bg-gradient-to-br ${vibe.gradient} h-full`}>
-                      <span className={`text-6xl mb-4 block transition-transform duration-700 ${isTaken ? "grayscale" : "group-hover:scale-110 group-hover:rotate-6"}`}>
+                    <div
+                      className={`p-8 pt-10 pb-6 text-center bg-gradient-to-br ${vibe.gradient} h-full`}
+                    >
+                      <span
+                        className={`text-6xl mb-4 block transition-transform duration-700 ${isTaken ? "grayscale" : "group-hover:scale-110 group-hover:rotate-6"}`}
+                      >
                         {isTaken ? "🔒" : vibe.emoji}
                       </span>
-                      <span className={`text-ocean-950 font-black text-2xl tracking-tight block ${isTaken ? "opacity-50" : ""}`}>
+                      <span
+                        className={`text-ocean-950 font-black text-2xl tracking-tight block ${isTaken ? "opacity-50" : ""}`}
+                      >
                         {t.name}
                       </span>
-                      <p className={`text-sm font-bold mt-2 tracking-wide uppercase opacity-70 ${isTaken ? "text-sand-600" : vibe.accent}`}>
+                      <p
+                        className={`text-sm font-bold mt-2 tracking-wide uppercase opacity-70 ${isTaken ? "text-sand-600" : vibe.accent}`}
+                      >
                         {isTaken ? "Table is taken" : vibe.tagline}
                       </p>
-                      
-                      <div className={`mt-6 inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${
-                        isMySession 
-                          ? "bg-palm text-white border-2 border-palm/20 shadow-[0_0_20px_rgba(20,83,45,0.3)]" 
+
+                      <div
+                        className={`mt-6 inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+                          isMySession
+                            ? "bg-palm text-white border-2 border-palm/20 shadow-[0_0_20px_rgba(20,83,45,0.3)]"
+                            : isTaken
+                              ? "bg-sand-100 text-sand-500 border border-sand-200"
+                              : "bg-white/90 text-ocean-800 border-2 border-ocean-100/50 group-hover:bg-ocean-600 group-hover:text-white group-hover:border-ocean-400"
+                        }`}
+                      >
+                        {isMySession
+                          ? "✨ Add Order"
                           : isTaken
-                            ? "bg-sand-100 text-sand-500 border border-sand-200"
-                            : "bg-white/90 text-ocean-800 border-2 border-ocean-100/50 group-hover:bg-ocean-600 group-hover:text-white group-hover:border-ocean-400"
-                      }`}>
-                        {isMySession ? "✨ Add Order" : isTaken ? "Occupied" : "Mangaon ta!"}
+                            ? "Occupied"
+                            : "Mangaon ta!"}
                       </div>
                     </div>
                   </Link>
 
                   {/* Dropdown + Password area */}
-                  <div className={`p-6 pt-0 bg-gradient-to-br ${vibe.gradient} space-y-3`}>
+                  <div
+                    className={`p-6 pt-0 bg-gradient-to-br ${vibe.gradient} space-y-3`}
+                  >
                     <div className="pt-4 border-t border-ocean-950/5">
                       <select
-                        value={manualStatuses[t.id] || (isTaken || isMySession ? "occupied" : "available")}
-                        onChange={(e) => handleManualStatusChange(t.id, e.target.value)}
+                        value={
+                          manualStatuses[t.id] ||
+                          (isTaken || isMySession ? "occupied" : "available")
+                        }
+                        onChange={(e) =>
+                          handleManualStatusChange(t.id, e.target.value)
+                        }
                         className="w-full bg-white/50 backdrop-blur-md border border-white/80 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-ocean-900 focus:outline-none focus:ring-2 focus:ring-palm/30 transition-all cursor-pointer hover:bg-white/80 text-center"
                       >
                         <option value="available">🟢 Available</option>
@@ -281,15 +315,26 @@ export default function TableLanding() {
 
                     {/* Table Password */}
                     <div className="pt-1">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-ocean-500 mb-1.5">🔑 Customer PIN (1–100)</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-ocean-500 mb-1.5">
+                        🔑 Customer PIN (1–100)
+                      </p>
                       <div className="flex gap-2 items-center">
                         <input
                           type="number"
                           min="1"
                           max="100"
-                          placeholder={tablePasswords[t.id] ? `Current: ${tablePasswords[t.id]}` : 'Enter 1-100'}
-                          value={passwordInputs[t.id] || ''}
-                          onChange={(e) => setPasswordInputs(prev => ({ ...prev, [t.id]: e.target.value }))}
+                          placeholder={
+                            tablePasswords[t.id]
+                              ? `Current: ${tablePasswords[t.id]}`
+                              : "Enter 1-100"
+                          }
+                          value={passwordInputs[t.id] || ""}
+                          onChange={(e) =>
+                            setPasswordInputs((prev) => ({
+                              ...prev,
+                              [t.id]: e.target.value,
+                            }))
+                          }
                           className="flex-1 bg-white/70 border border-white/80 rounded-xl px-3 py-2 text-xs font-bold text-ocean-900 focus:outline-none focus:ring-2 focus:ring-palm/30"
                         />
                         <button
@@ -309,7 +354,9 @@ export default function TableLanding() {
                         )}
                       </div>
                       {tablePasswords[t.id] && (
-                        <p className="text-[9px] text-palm font-bold mt-1">✔ PIN active: {tablePasswords[t.id]}</p>
+                        <p className="text-[9px] text-palm font-bold mt-1">
+                          ✔ PIN active: {tablePasswords[t.id]}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -326,7 +373,11 @@ export default function TableLanding() {
             Created by Kim Guartel
           </p>
           <p className="text-[11px] font-medium text-ocean-700/80 leading-relaxed max-w-lg mx-auto">
-            This website was created by Kim Guartel, an Information Technology student passionate about web development, system design, and innovative digital solutions. Dedicated to creating user-friendly and efficient applications, Kim aims to deliver quality projects with creativity and technical excellence.
+            This website was created by Kim Guartel, an Information Technology
+            student passionate about web development, system design, and
+            innovative digital solutions. Dedicated to creating user-friendly
+            and efficient applications, Kim aims to deliver quality projects
+            with creativity and technical excellence.
           </p>
           <div className="pt-4 border-t border-ocean-200/50 flex flex-col items-center gap-2">
             <p className="text-[10px] font-bold uppercase tracking-widest text-ocean-400">
@@ -339,10 +390,7 @@ export default function TableLanding() {
         </div>
       </footer>
 
-      <AdminDrawer 
-        open={isAdminOpen} 
-        onClose={() => setIsAdminOpen(false)} 
-      />
+      <AdminDrawer open={isAdminOpen} onClose={() => setIsAdminOpen(false)} />
     </div>
   );
 }
