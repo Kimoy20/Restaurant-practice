@@ -152,7 +152,7 @@ export default function CustomerMenu() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           {/* Back Button */}
           <Link
-            to="/table"
+            to="/customer-tables"
             className="inline-flex items-center gap-2 text-ocean-700 hover:text-palm font-bold transition-all group"
           >
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-ocean-50 flex items-center justify-center group-hover:bg-ocean-100 group-hover:-translate-x-1 transition-all">

@@ -69,7 +69,37 @@ export default function CustomerTableLanding() {
   const handlePinSubmit = () => {
     const required = pins[pinModal.tableId];
     if (pinInput.trim() === required) {
+      // Store successful PIN authentication with both ID formats
+      const pinAuth = JSON.parse(
+        localStorage.getItem("pin_authenticated_tables") || "{}",
+      );
+      const tableNumericId = pinModal.tableId;
+      const tableSlugId = pinModal.tableSlug;
+
+      // Store with both numeric ID and slug for compatibility
+      pinAuth[tableNumericId] = {
+        authenticated: true,
+        timestamp: Date.now(),
+        tableName: pinModal.tableName,
+      };
+      pinAuth[tableSlugId] = {
+        authenticated: true,
+        timestamp: Date.now(),
+        tableName: pinModal.tableName,
+      };
+
+      localStorage.setItem("pin_authenticated_tables", JSON.stringify(pinAuth));
+
+      console.log("PIN authenticated for:", {
+        tableNumericId,
+        tableSlugId,
+        pinAuth,
+      });
+
       setPinModal(null);
+      setPinInput("");
+      setPinError("");
+      // Navigate to the order page for this table
       navigate(`/order/${pinModal.tableSlug}`);
     } else {
       setPinError("Wrong PIN. Please try again.");
@@ -152,7 +182,8 @@ export default function CustomerTableLanding() {
     const manualStatuses = JSON.parse(
       localStorage.getItem("manual_table_statuses") || "{}",
     );
-    if (manualStatuses[t.id] === "occupied") return "taken";
+    // If manually set to occupied, allow adding orders
+    if (manualStatuses[t.id] === "occupied") return "occupied";
 
     const myOrders = JSON.parse(
       localStorage.getItem("my_active_orders") || "[]",
@@ -162,6 +193,7 @@ export default function CustomerTableLanding() {
 
     const hasGlobalOrder =
       activeTableOrders[t.id] && activeTableOrders[t.id].length > 0;
+    // If table has global orders but no PIN protection, it's taken (blocked)
     if (hasGlobalOrder) return "taken";
 
     return "available";
@@ -197,8 +229,8 @@ export default function CustomerTableLanding() {
               const isMySession = status === "my_session";
               const isPinProtected = status === "pin_protected";
 
-              // PIN-protected tables are always clickable
-              const isBlocked = isTaken && !isPinProtected;
+              // Only taken tables are blocked, PIN-protected are accessible
+              const isBlocked = isTaken;
 
               return (
                 <div

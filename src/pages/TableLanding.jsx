@@ -161,7 +161,7 @@ export default function TableLanding() {
 
   const getTableStatus = (table) => {
     // Priority 1: Manual Override
-    if (manualStatuses[table.id] === "occupied") return "my_session";
+    if (manualStatuses[table.id] === "occupied") return "occupied_available";
     if (manualStatuses[table.id] === "available") return "available";
 
     const activeOrderIds = activeTableOrders[table.id] || [];
@@ -185,7 +185,7 @@ export default function TableLanding() {
       myActiveOrders.some((mo) => mo.id === id || mo === id),
     );
 
-    return isMine ? "my_session" : "taken";
+    return isMine ? "my_session" : "occupied_available";
   };
 
   return (
@@ -244,6 +244,7 @@ export default function TableLanding() {
 
               const isTaken = status === "taken";
               const isMySession = status === "my_session";
+              const isOccupiedAvailable = status === "occupied_available";
 
               return (
                 <div
@@ -251,18 +252,18 @@ export default function TableLanding() {
                   className="relative group bg-white/95 rounded-[2.5rem] border-2 border-white shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl overflow-hidden flex flex-col"
                 >
                   {/* Upper clickable area */}
-                  <Link
-                    to={isTaken ? "#" : `/order/${t.slug}`}
-                    className={`block flex-1 ${isTaken ? "opacity-75 cursor-not-allowed" : ""}`}
-                    onClick={(e) => isTaken && e.preventDefault()}
-                  >
+                  <Link to={`/order/${t.slug}`} className="block flex-1">
                     <div
                       className={`p-8 pt-10 pb-6 text-center bg-gradient-to-br ${vibe.gradient} h-full`}
                     >
                       <span
                         className={`text-6xl mb-4 block transition-transform duration-700 ${isTaken ? "grayscale" : "group-hover:scale-110 group-hover:rotate-6"}`}
                       >
-                        {isTaken ? "🔒" : vibe.emoji}
+                        {isTaken
+                          ? "🔒"
+                          : isOccupiedAvailable
+                            ? "🍽️"
+                            : vibe.emoji}
                       </span>
                       <span
                         className={`text-ocean-950 font-black text-2xl tracking-tight block ${isTaken ? "opacity-50" : ""}`}
@@ -270,9 +271,13 @@ export default function TableLanding() {
                         {t.name}
                       </span>
                       <p
-                        className={`text-sm font-bold mt-2 tracking-wide uppercase opacity-70 ${isTaken ? "text-sand-600" : vibe.accent}`}
+                        className={`text-sm font-bold mt-2 tracking-wide uppercase opacity-70 ${isTaken ? "text-sand-600" : isOccupiedAvailable ? "text-ocean-600" : vibe.accent}`}
                       >
-                        {isTaken ? "Table is taken" : vibe.tagline}
+                        {isTaken
+                          ? "Table is taken"
+                          : isOccupiedAvailable
+                            ? "Add to order"
+                            : vibe.tagline}
                       </p>
 
                       <div
@@ -281,14 +286,20 @@ export default function TableLanding() {
                             ? "bg-palm text-white border-2 border-palm/20 shadow-[0_0_20px_rgba(20,83,45,0.3)]"
                             : isTaken
                               ? "bg-sand-100 text-sand-500 border border-sand-200"
-                              : "bg-white/90 text-ocean-800 border-2 border-ocean-100/50 group-hover:bg-ocean-600 group-hover:text-white group-hover:border-ocean-400"
+                              : isOccupiedAvailable
+                                ? "bg-amber-50 text-amber-700 border-2 border-amber-200 group-hover:bg-amber-500 group-hover:text-white"
+                                : "bg-white/90 text-ocean-800 border-2 border-ocean-100/50 group-hover:bg-ocean-600 group-hover:text-white group-hover:border-ocean-400"
                         }`}
                       >
                         {isMySession
                           ? "✨ Add Order"
                           : isTaken
                             ? "Occupied"
-                            : "Mangaon ta!"}
+                            : status === "available"
+                              ? "Mangaon ta!"
+                              : isOccupiedAvailable
+                                ? "🍽️ Add Order"
+                                : vibe.tagline}
                       </div>
                     </div>
                   </Link>

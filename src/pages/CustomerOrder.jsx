@@ -10,6 +10,12 @@ export default function CustomerOrder() {
   const { tableId } = useParams();
   const userRole = localStorage.getItem("user_role");
   const isCustomer = userRole === "customer";
+
+  console.log("CustomerOrder Debug:", {
+    userRole,
+    isCustomer,
+    tableId,
+  });
   const [table, setTable] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [cart, setCart] = useState([]);
@@ -24,6 +30,7 @@ export default function CustomerOrder() {
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [showQuickScroll, setShowQuickScroll] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [customerName, setCustomerName] = useState("");
 
   const mockMenuItems = [
     {
@@ -64,7 +71,12 @@ export default function CustomerOrder() {
     const loadData = async () => {
       try {
         if (!supabase) {
-          setTable({ id: "1", slug: tableId, name: `Table ${tableId}` });
+          const numericId = tableId.split("-")[1] || "1";
+          setTable({
+            id: `00000000-0000-4000-8000-${numericId.padStart(12, "0")}`,
+            slug: tableId,
+            name: `Table ${numericId}`,
+          });
           setMenuItems(mockMenuItems);
           setLoading(false);
           return;
@@ -95,10 +107,11 @@ export default function CustomerOrder() {
         let currentTable = tableData;
         if (tableError || !tableData) {
           console.warn("Table fetch issue, using fallback:", tableError);
-          // Standard mapping: slug table-1 -> id 1, table-2 -> id 2 ...
+          // Generate deterministic UUID based on table slug for consistency
           const numericId = tableId.split("-")[1] || "1";
+          const deterministicId = crypto.randomUUID();
           currentTable = {
-            id: numericId,
+            id: deterministicId,
             slug: tableId,
             name: `Table ${numericId}`,
           };
@@ -134,8 +147,37 @@ export default function CustomerOrder() {
           const isActiveForMe = currentActiveOrders.some(
             (o) => o.id === activeOrderId || o === activeOrderId,
           );
+
+          // Check if user has authenticated via PIN for this table
+          const pinAuth = JSON.parse(
+            localStorage.getItem("pin_authenticated_tables") || "{}",
+          );
+
+          // Try both numeric and slug formats for PIN auth check
+          const tableNumericId =
+            currentTable?.id?.toString() || tableId?.replace("table-", "");
+          const tableSlugId = tableId;
+
+          const isPinAuthenticated =
+            pinAuth[tableNumericId]?.authenticated ||
+            pinAuth[tableSlugId]?.authenticated ||
+            false;
+
+          console.log("PIN auth check:", {
+            tableNumericId,
+            tableSlugId,
+            isPinAuthenticated,
+            pinAuthKeys: Object.keys(pinAuth),
+          });
+
           setHasActiveOrder(isActiveForMe || tableSessionOrders.length > 0);
-          setIsTakenByOther(!isActiveForMe && tableSessionOrders.length === 0);
+          // Owners can always add orders, customers need PIN auth or active orders
+          setIsTakenByOther(
+            isCustomer &&
+              !isActiveForMe &&
+              tableSessionOrders.length === 0 &&
+              !isPinAuthenticated,
+          );
         } else {
           setHasActiveOrder(tableSessionOrders.length > 0);
           setIsTakenByOther(false);
@@ -180,6 +222,21 @@ export default function CustomerOrder() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isCategoryOpen]);
 
+  // Load customer name from localStorage on component mount
+  useEffect(() => {
+    const savedCustomerName = localStorage.getItem(`customer_name_${tableId}`);
+    if (savedCustomerName) {
+      setCustomerName(savedCustomerName);
+    }
+  }, [tableId]);
+
+  // Save customer name to localStorage whenever it changes
+  useEffect(() => {
+    if (customerName.trim()) {
+      localStorage.setItem(`customer_name_${tableId}`, customerName);
+    }
+  }, [customerName, tableId]);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -222,6 +279,10 @@ export default function CustomerOrder() {
   };
 
   const addToCart = (item) => {
+    console.log("addToCart called with item:", item);
+    console.log("Current isCustomer:", isCustomer);
+    console.log("Current cart before:", cart);
+
     setCart((prev) => {
       const quantityToAdd = 1; // You can pass actual qty here if needed
       const existing = prev.find((i) => i.id === item.id);
@@ -231,6 +292,8 @@ export default function CustomerOrder() {
         );
       return [...prev, { ...item, quantity: 1 }];
     });
+
+    console.log("Setting cartOpen to true");
     setCartOpen(true);
   };
 
@@ -250,6 +313,47 @@ export default function CustomerOrder() {
       return;
     }
 
+    // Check if we're using a fallback table (not from database)
+    const isFallbackTable = table.id.startsWith("00000000-0000-4000-8000-");
+
+    if (isFallbackTable) {
+      // For fallback tables, save only to localStorage
+      const orderId = crypto.randomUUID();
+      const total = cart.reduce(
+        (sum, i) => sum + Number(i.price) * i.quantity,
+        0,
+      );
+
+      const newOrder = {
+        id: orderId,
+        tableId: tableId,
+        items: [...cart],
+        timestamp: new Date().toISOString(),
+        customerName: customerName.trim() || "Walk-in Customer",
+        total: total,
+        tableName: table.name,
+      };
+
+      // Save to localStorage only
+      const myOrders = JSON.parse(
+        localStorage.getItem("my_active_orders") || "[]",
+      );
+      localStorage.setItem(
+        "my_active_orders",
+        JSON.stringify([...myOrders, newOrder]),
+      );
+
+      setSessionOrders((prev) => [...prev, newOrder]);
+      setCart([]);
+      setCartOpen(false);
+      setHasActiveOrder(true);
+      setShowOrderSuccess(true);
+      setTimeout(() => setShowOrderSuccess(false), 3000);
+
+      alert("Order saved locally (offline mode)");
+      return;
+    }
+
     const orderId = crypto.randomUUID();
     const total = cart.reduce(
       (sum, i) => sum + Number(i.price) * i.quantity,
@@ -261,6 +365,7 @@ export default function CustomerOrder() {
       id: orderId,
       table_id: table.id,
       status: "pending",
+      customer_name: customerName.trim() || "Walk-in Customer",
     };
 
     console.log(
@@ -319,6 +424,7 @@ export default function CustomerOrder() {
         tableId: tableId,
         items: [...cart],
         timestamp: orderPayload.timestamp,
+        customerName: customerName.trim() || "Walk-in Customer",
       };
       localStorage.setItem(
         "my_active_orders",
@@ -381,6 +487,10 @@ export default function CustomerOrder() {
       tableId: tableId,
       tableName: table?.name || `Table ${tableId.split("-")[1] || ""}`,
       timestamp: new Date().toISOString(),
+      customerName:
+        customerName.trim() ||
+        sessionOrders[0]?.customerName ||
+        "Walk-in Customer",
     };
 
     setSubmittedOrder(finalOrder);
@@ -406,6 +516,13 @@ export default function CustomerOrder() {
     const remainingOrders = myOrders.filter((o) => o.tableId !== tableId);
     localStorage.setItem("my_active_orders", JSON.stringify(remainingOrders));
 
+    // Clear PIN authentication for this table
+    const pinAuth = JSON.parse(
+      localStorage.getItem("pin_authenticated_tables") || "{}",
+    );
+    delete pinAuth[table?.id];
+    localStorage.setItem("pin_authenticated_tables", JSON.stringify(pinAuth));
+
     // Reset manual status if it was occupied
     const manualStatuses = JSON.parse(
       localStorage.getItem("manual_table_statuses") || "{}",
@@ -422,7 +539,9 @@ export default function CustomerOrder() {
     setSessionOrders([]);
     setHasActiveOrder(false);
     setIsCheckingOut(false);
-    window.location.href = "/table";
+    setCustomerName(""); // Clear customer name when done eating
+    localStorage.removeItem(`customer_name_${tableId}`); // Also clear from localStorage
+    window.location.href = isCustomer ? "/customer-tables" : "/table";
   };
 
   const cartTotal = cart.reduce(
@@ -458,7 +577,11 @@ export default function CustomerOrder() {
             please ask them to add to their order!
           </p>
           <button
-            onClick={() => (window.location.href = "/table")}
+            onClick={() =>
+              (window.location.href = isCustomer
+                ? "/customer-tables"
+                : "/table")
+            }
             className="w-full btn-secondary py-4"
           >
             Choose another table
@@ -475,11 +598,7 @@ export default function CustomerOrder() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           {/* Back Button */}
           <Link
-            to={
-              localStorage.getItem("user_role") === "customer"
-                ? "/about"
-                : "/table"
-            }
+            to={isCustomer ? "/customer-tables" : "/table"}
             className="inline-flex items-center gap-2 text-ocean-700 hover:text-palm font-bold transition-all group"
           >
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-ocean-50 flex items-center justify-center group-hover:bg-ocean-100 group-hover:-translate-x-1 transition-all">
@@ -488,10 +607,27 @@ export default function CustomerOrder() {
           </Link>
 
           {/* Table Info & Actions */}
-          <div className="text-center flex flex-col items-center gap-1">
+          <div className="text-center flex flex-col items-center gap-2">
             <h1 className="heading-display text-xl sm:text-4xl text-ocean-950 font-black">
               {table?.name || "Siaro Kaw"}
             </h1>
+
+            {/* Customer Name Input - Only for Owners */}
+            {!isCustomer && (
+              <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/40">
+                <span className="text-[9px] font-black uppercase tracking-widest text-ocean-600">
+                  Customer:
+                </span>
+                <input
+                  type="text"
+                  placeholder="Enter customer name"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-ocean-900 placeholder-ocean-400 focus:outline-none focus:ring-2 focus:ring-palm/30 rounded px-2 py-1 w-32"
+                />
+              </div>
+            )}
+
             <div className="flex items-center gap-3">
               <p className="text-[9px] sm:text-[10px] text-ocean-400 font-black uppercase tracking-[0.2em]">
                 {hasActiveOrder
@@ -513,7 +649,15 @@ export default function CustomerOrder() {
             {/* Cart Button - Only for Owners */}
             {!isCustomer && (
               <button
-                onClick={() => setCartOpen(true)}
+                onClick={() => {
+                  console.log(
+                    "Cart button clicked. Current cartOpen:",
+                    cartOpen,
+                  );
+                  console.log("Current cart:", cart);
+                  console.log("Current cartCount:", cartCount);
+                  setCartOpen(true);
+                }}
                 className="relative inline-flex items-center gap-2 bg-gradient-to-br from-ocean-500 via-ocean-600 to-ocean-800 text-white font-black px-4 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-lg border border-white/20 hover:shadow-ocean-200/50 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 <span className="text-xl">🛒</span>
@@ -556,6 +700,12 @@ export default function CustomerOrder() {
           onAdd={isCustomer ? undefined : addToCart}
           onAddNewItem={isCustomer ? undefined : handleAddNewItem}
         />
+
+        {/* Debug Info */}
+        <div className="fixed bottom-4 left-4 bg-black/80 text-white p-2 rounded text-xs">
+          Debug: isCustomer={isCustomer.toString()}, onAdd=
+          {isCustomer ? "undefined" : "addToCart"}
+        </div>
       </main>
 
       {/* Cart Drawer */}

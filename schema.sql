@@ -37,6 +37,7 @@ create table if not exists public.orders (
   table_id uuid not null references public.tables(id) on delete restrict,
   status text not null default 'pending' check (status in ('pending', 'preparing', 'ready', 'served', 'cancelled')),
   notes text,
+  customer_name text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

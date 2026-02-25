@@ -7,11 +7,17 @@ export default function AdminDrawer({ open, onClose }) {
 
   useEffect(() => {
     if (open) {
-      const globalOrders = JSON.parse(localStorage.getItem('global_completed_orders') || '[]');
-      const income = globalOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+      const globalOrders = JSON.parse(
+        localStorage.getItem("global_completed_orders") || "[]",
+      );
+      console.log("Debug - Global Orders:", globalOrders); // Debug line
+      const income = globalOrders.reduce(
+        (sum, order) => sum + (order.total || 0),
+        0,
+      );
       setStats({
         totalOrders: globalOrders.length,
-        totalIncome: income
+        totalIncome: income,
       });
       setHistory(globalOrders.reverse()); // Show newest first
     } else {
@@ -39,7 +45,9 @@ export default function AdminDrawer({ open, onClose }) {
               <h2 className="text-2xl font-black tracking-tight text-palm">
                 {showHistory ? "Order History" : "Sales Dashboard"}
               </h2>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ocean-400 mt-1">Management Console</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ocean-400 mt-1">
+                Management Console
+              </p>
             </div>
             <button
               onClick={onClose}
@@ -53,68 +61,105 @@ export default function AdminDrawer({ open, onClose }) {
             {!showHistory ? (
               /* Summary View */
               <div className="space-y-6 animate-fade-in-up">
-                <button 
+                <button
                   onClick={() => setShowHistory(true)}
                   className="w-full text-left bg-white/5 rounded-[2rem] p-8 border border-white/10 relative overflow-hidden group hover:bg-white/10 transition-all"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-all text-4xl group-hover:translate-x-1 group-hover:-translate-y-1">🧾</div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-ocean-400 mb-2">Total Orders</p>
-                  <h3 className="text-5xl font-black text-white">{stats.totalOrders}</h3>
+                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-all text-4xl group-hover:translate-x-1 group-hover:-translate-y-1">
+                    🧾
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-ocean-400 mb-2">
+                    Total Orders
+                  </p>
+                  <h3 className="text-5xl font-black text-white">
+                    {stats.totalOrders}
+                  </h3>
                   <div className="mt-4 flex items-center gap-2 text-palm text-[9px] font-black uppercase tracking-widest">
                     <span>View Details</span>
-                    <span className="group-hover:translate-x-1 transition-transform">→</span>
+                    <span className="group-hover:translate-x-1 transition-transform">
+                      →
+                    </span>
                   </div>
                 </button>
 
                 <div className="bg-gradient-to-br from-palm/20 to-transparent rounded-[2rem] p-8 border border-palm/20 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">💰</div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-palm/80 mb-2">Total Income</p>
-                  <h3 className="text-5xl font-black text-white">₱{stats.totalIncome.toFixed(0)}</h3>
+                  <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">
+                    💰
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-palm/80 mb-2">
+                    Total Income
+                  </p>
+                  <h3 className="text-5xl font-black text-white">
+                    ₱{stats.totalIncome.toFixed(0)}
+                  </h3>
                 </div>
               </div>
             ) : (
               /* History List View */
               <div className="space-y-4 animate-fade-in-right">
-                <button 
+                <button
                   onClick={() => setShowHistory(false)}
                   className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-ocean-400 hover:text-palm flex items-center gap-2 transition-colors"
                 >
                   ← Back to Summary
                 </button>
-                
+
                 {history.length === 0 ? (
                   <div className="py-20 text-center opacity-30">
-                    <p className="text-sm font-bold uppercase tracking-widest">No orders yet</p>
+                    <p className="text-sm font-bold uppercase tracking-widest">
+                      No orders yet
+                    </p>
                   </div>
                 ) : (
-                  history.map((order, idx) => (
-                    <div key={idx} className="bg-white/5 rounded-3xl p-5 border border-white/10 hover:border-white/20 transition-all">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h4 className="font-black text-palm uppercase tracking-wider text-sm">
-                            {order.tableName || "Unknown Table"}
-                          </h4>
-                          <p className="text-[10px] text-ocean-500 font-medium">
-                            {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(order.timestamp).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <span className="text-sm font-black text-white px-3 py-1 bg-white/5 rounded-full">
-                          ₱{order.total?.toFixed(0)}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-1 opacity-70 border-t border-white/5 pt-3">
-                        {order.items.map((item, iIdx) => (
-                          <div key={iIdx} className="flex justify-between text-[10px] font-medium tracking-tight">
-                            <span className="text-ocean-200">
-                              {item.quantity}× {item.name}
-                            </span>
-                            <span className="text-ocean-400">₱{(item.price * item.quantity).toFixed(0)}</span>
+                  history.map((order, idx) => {
+                    console.log(`Debug - Order ${idx}:`, order); // Debug line
+                    return (
+                      <div
+                        key={idx}
+                        className="bg-white/5 rounded-3xl p-5 border border-white/10 hover:border-white/20 transition-all"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h4 className="font-black text-palm uppercase tracking-wider text-sm">
+                              {order.tableName || "Unknown Table"}
+                            </h4>
+                            <p className="text-xs font-bold text-white mb-1">
+                              {order.customerName || "Walk-in Customer"}
+                            </p>
+                            <p className="text-[10px] text-ocean-500 font-medium">
+                              {new Date(order.timestamp).toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}{" "}
+                              • {new Date(order.timestamp).toLocaleDateString()}
+                            </p>
                           </div>
-                        ))}
+                          <span className="text-sm font-black text-white px-3 py-1 bg-white/5 rounded-full">
+                            ₱{order.total?.toFixed(0)}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1 opacity-70 border-t border-white/5 pt-3">
+                          {order.items.map((item, iIdx) => (
+                            <div
+                              key={iIdx}
+                              className="flex justify-between text-[10px] font-medium tracking-tight"
+                            >
+                              <span className="text-ocean-200">
+                                {item.quantity}× {item.name}
+                              </span>
+                              <span className="text-ocean-400">
+                                ₱{(item.price * item.quantity).toFixed(0)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             )}
@@ -123,10 +168,12 @@ export default function AdminDrawer({ open, onClose }) {
           {/* Footer */}
           {!showHistory && (
             <div className="pt-8 border-t border-white/10 mt-auto flex flex-col gap-4">
-              <button 
+              <button
                 onClick={() => {
-                  if(confirm("Are you sure you want to clear all sales data?")) {
-                    localStorage.removeItem('global_completed_orders');
+                  if (
+                    confirm("Are you sure you want to clear all sales data?")
+                  ) {
+                    localStorage.removeItem("global_completed_orders");
                     setStats({ totalOrders: 0, totalIncome: 0 });
                     setHistory([]);
                   }
@@ -135,10 +182,10 @@ export default function AdminDrawer({ open, onClose }) {
               >
                 Clear Sales History
               </button>
-              <button 
+              <button
                 onClick={() => {
-                  localStorage.removeItem('current_user')
-                  window.location.href = '/login'
+                  localStorage.removeItem("current_user");
+                  window.location.href = "/login";
                 }}
                 className="w-full py-4 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
               >
