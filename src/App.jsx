@@ -64,6 +64,18 @@ function App() {
         </>
       ) : (
         <>
+          <Route
+            path="/customer-tables"
+            element={<Navigate to="/login" replace />}
+          />
+          <Route
+            path="/order/:tableId"
+            element={<Navigate to="/login" replace />}
+          />
+          <Route path="/menu" element={<Navigate to="/login" replace />} />
+          <Route path="/about" element={<Navigate to="/login" replace />} />
+          <Route path="/table" element={<Navigate to="/login" replace />} />
+          <Route path="/kitchen" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </>
       )}
