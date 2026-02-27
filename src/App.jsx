@@ -17,7 +17,7 @@ function App() {
     const currentUser = localStorage.getItem("current_user");
     const role = localStorage.getItem("user_role");
 
-    console.log("App auth check:", { currentUser, role });
+    console.log("App auth check - V2:", { currentUser, role });
 
     if (currentUser && role) {
       setIsAuthenticated(true);
