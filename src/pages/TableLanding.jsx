@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { fetchAllPins, savePin, clearPin } from "../lib/tablePins";
 import AdminDrawer from "../AdminDrawer";
@@ -44,6 +44,25 @@ const TABLE_VIBES = [
 ];
 
 export default function TableLanding() {
+  const navigate = useNavigate();
+
+  // Check if user is authenticated
+  useEffect(() => {
+    const currentUser = localStorage.getItem("current_user");
+    const userRole = localStorage.getItem("user_role");
+
+    if (!currentUser || !userRole) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    // Only allow owners/staff to access this page
+    if (userRole === "customer") {
+      navigate("/customer-tables", { replace: true });
+      return;
+    }
+  }, [navigate]);
+
   const [tables, setTables] = useState([]);
   const [activeTableOrders, setActiveTableOrders] = useState({}); // tableId -> list of active order IDs
   const [loading, setLoading] = useState(true);

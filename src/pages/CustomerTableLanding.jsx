@@ -44,6 +44,24 @@ const TABLE_VIBES = [
 
 export default function CustomerTableLanding() {
   const navigate = useNavigate();
+
+  // Check if user is authenticated
+  useEffect(() => {
+    const currentUser = localStorage.getItem("current_user");
+    const userRole = localStorage.getItem("user_role");
+
+    if (!currentUser || !userRole) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    // Only allow customers to access this page
+    if (userRole !== "customer") {
+      navigate("/login", { replace: true });
+      return;
+    }
+  }, [navigate]);
+
   const [tables, setTables] = useState([]);
   const [activeTableOrders, setActiveTableOrders] = useState({});
   const [loading, setLoading] = useState(true);
