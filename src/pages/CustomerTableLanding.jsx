@@ -45,21 +45,27 @@ const TABLE_VIBES = [
 export default function CustomerTableLanding() {
   const navigate = useNavigate();
 
-  // Check if user is authenticated
+  // Check if user is authenticated - Updated for Vercel deployment
   useEffect(() => {
     const currentUser = localStorage.getItem("current_user");
     const userRole = localStorage.getItem("user_role");
 
+    console.log("Auth check:", { currentUser, userRole });
+
     if (!currentUser || !userRole) {
+      console.log("Redirecting to login - no auth data");
       navigate("/login", { replace: true });
       return;
     }
 
     // Only allow customers to access this page
     if (userRole !== "customer") {
+      console.log("Redirecting to login - wrong role:", userRole);
       navigate("/login", { replace: true });
       return;
     }
+
+    console.log("Authentication passed");
   }, [navigate]);
 
   const [tables, setTables] = useState([]);
