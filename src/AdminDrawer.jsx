@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
+import { savePin, clearPin, fetchAllPins } from "./lib/tablePins";
 
 export default function AdminDrawer({ open, onClose }) {
   const [stats, setStats] = useState({ totalOrders: 0, totalIncome: 0 });
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showPinManagement, setShowPinManagement] = useState(false);
+  const [pins, setPins] = useState({});
+  const [pinInputs, setPinInputs] = useState({});
 
   useEffect(() => {
     if (open) {
@@ -20,10 +24,37 @@ export default function AdminDrawer({ open, onClose }) {
         totalIncome: income,
       });
       setHistory(globalOrders.reverse()); // Show newest first
+
+      // Load PINs
+      loadPins();
     } else {
       setShowHistory(false);
+      setShowPinManagement(false);
     }
   }, [open]);
+
+  const loadPins = async () => {
+    const fetchedPins = await fetchAllPins();
+    setPins(fetchedPins);
+    setPinInputs(fetchedPins);
+  };
+
+  const handlePinChange = (tableId, value) => {
+    setPinInputs((prev) => ({ ...prev, [tableId]: value }));
+  };
+
+  const saveTablePin = async (tableId) => {
+    const pin = pinInputs[tableId];
+    if (pin && pin.trim()) {
+      await savePin(tableId, pin.trim());
+      await loadPins();
+    }
+  };
+
+  const removeTablePin = async (tableId) => {
+    await clearPin(tableId);
+    await loadPins();
+  };
 
   return (
     <>
@@ -43,7 +74,11 @@ export default function AdminDrawer({ open, onClose }) {
           <div className="flex justify-between items-center mb-10">
             <div>
               <h2 className="text-2xl font-black tracking-tight text-palm">
-                {showHistory ? "Order History" : "Sales Dashboard"}
+                {showPinManagement
+                  ? "PIN Management"
+                  : showHistory
+                    ? "Order History"
+                    : "Sales Dashboard"}
               </h2>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-ocean-400 mt-1">
                 Management Console
@@ -58,9 +93,30 @@ export default function AdminDrawer({ open, onClose }) {
           </div>
 
           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            {!showHistory ? (
+            {!showHistory && !showPinManagement ? (
               /* Summary View */
               <div className="space-y-6 animate-fade-in-up">
+                <button
+                  onClick={() => setShowPinManagement(true)}
+                  className="w-full text-left bg-white/5 rounded-[2rem] p-8 border border-white/10 relative overflow-hidden group hover:bg-white/10 transition-all"
+                >
+                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-all text-4xl group-hover:translate-x-1 group-hover:-translate-y-1">
+                    🔑
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-ocean-400 mb-2">
+                    Table PINs
+                  </p>
+                  <h3 className="text-2xl font-black text-white mb-2">
+                    Manage Access
+                  </h3>
+                  <div className="flex items-center gap-2 text-palm text-[9px] font-black uppercase tracking-widest">
+                    <span>Set PINs</span>
+                    <span className="group-hover:translate-x-1 transition-transform">
+                      →
+                    </span>
+                  </div>
+                </button>
+
                 <button
                   onClick={() => setShowHistory(true)}
                   className="w-full text-left bg-white/5 rounded-[2rem] p-8 border border-white/10 relative overflow-hidden group hover:bg-white/10 transition-all"
@@ -92,6 +148,74 @@ export default function AdminDrawer({ open, onClose }) {
                   <h3 className="text-5xl font-black text-white">
                     ₱{stats.totalIncome.toFixed(0)}
                   </h3>
+                </div>
+              </div>
+            ) : showPinManagement ? (
+              /* PIN Management View */
+              <div className="space-y-4 animate-fade-in-up">
+                <button
+                  onClick={() => setShowPinManagement(false)}
+                  className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-ocean-400 hover:text-palm flex items-center gap-2 transition-colors"
+                >
+                  ← Back to Summary
+                </button>
+
+                <div className="space-y-3">
+                  {["1", "2", "3", "4", "5", "6"].map((tableId) => (
+                    <div
+                      key={tableId}
+                      className="bg-white/5 rounded-2xl p-4 border border-white/10"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-black text-white uppercase tracking-wider text-sm">
+                          Table {tableId}
+                        </h4>
+                        {pins[tableId] && (
+                          <span className="text-xs px-2 py-1 bg-palm/20 text-palm rounded-full font-black">
+                            🔑 Protected
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="Enter PIN (1-100)"
+                          value={pinInputs[tableId] || ""}
+                          onChange={(e) =>
+                            handlePinChange(
+                              tableId,
+                              e.target.value.replace(/[^0-9]/g, ""),
+                            )
+                          }
+                          className="flex-1 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-center font-black focus:outline-none focus:border-palm text-sm"
+                        />
+                        <button
+                          onClick={() => saveTablePin(tableId)}
+                          className="px-4 py-2 bg-palm text-white rounded-xl font-black text-xs hover:bg-palm/80 transition-all"
+                        >
+                          Set
+                        </button>
+                        {pins[tableId] && (
+                          <button
+                            onClick={() => removeTablePin(tableId)}
+                            className="px-4 py-2 bg-red-500/20 text-red-400 rounded-xl font-black text-xs hover:bg-red-500/30 transition-all"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20">
+                  <p className="text-xs font-medium text-amber-400">
+                    💡 PINs allow customers to access specific tables. Share the
+                    PIN with customers who need access to their table.
+                  </p>
                 </div>
               </div>
             ) : (
@@ -166,7 +290,7 @@ export default function AdminDrawer({ open, onClose }) {
           </div>
 
           {/* Footer */}
-          {!showHistory && (
+          {!showHistory && !showPinManagement && (
             <div className="pt-8 border-t border-white/10 mt-auto flex flex-col gap-4">
               <button
                 onClick={() => {

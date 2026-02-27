@@ -193,23 +193,23 @@ export default function CustomerTableLanding() {
 
     const hasGlobalOrder =
       activeTableOrders[t.id] && activeTableOrders[t.id].length > 0;
-    // If table has global orders but no PIN protection, it's taken (blocked)
-    if (hasGlobalOrder) return "taken";
+    // If table has global orders but no PIN protection, it's available for viewing
+    if (hasGlobalOrder) return "available";
 
     return "available";
   };
 
   return (
-    <div className="min-h-screen bg-island-page relative pb-10 flex flex-col items-center justify-center">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-12 flex-1 flex flex-col">
-        <div className="text-center mb-16 relative z-10 animate-fade-in-up">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-white shadow-xl mb-8 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
-            <span className="text-4xl">🌴</span>
+    <div className="min-h-screen bg-island-page relative pb-8 sm:pb-10 flex flex-col items-center justify-center">
+      <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 py-8 sm:py-12 flex-1 flex flex-col">
+        <div className="text-center mb-8 sm:mb-16 relative z-10 animate-fade-in-up">
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-white shadow-xl mb-4 sm:mb-8 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+            <span className="text-3xl sm:text-4xl">🌴</span>
           </div>
-          <h1 className="heading-display text-5xl md:text-7xl font-black text-ocean-950 mb-4 tracking-tight">
+          <h1 className="heading-display text-3xl sm:text-5xl md:text-7xl font-black text-ocean-950 mb-2 sm:mb-4 tracking-tight">
             Choose Your Spot
           </h1>
-          <p className="text-xl md:text-2xl text-ocean-700 font-bold mb-6 italic">
+          <p className="text-lg sm:text-xl md:text-2xl text-ocean-700 font-bold mb-4 sm:mb-6 italic">
             "Pick a table to view your menu and orders."
           </p>
         </div>
@@ -220,79 +220,61 @@ export default function CustomerTableLanding() {
             <p>Loading tables…</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 w-full max-w-3xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 w-full max-w-3xl mx-auto">
             {tables.map((t, i) => {
               const vibe = TABLE_VIBES[i % TABLE_VIBES.length];
               const status = getTableStatus(t);
 
-              const isTaken = status === "taken";
+              const isTaken = false; // Never taken anymore
               const isMySession = status === "my_session";
               const isPinProtected = status === "pin_protected";
 
-              // Only taken tables are blocked, PIN-protected are accessible
-              const isBlocked = isTaken;
+              // Only taken tables are blocked, but we never have taken tables anymore
+              const isBlocked = false;
 
               return (
                 <div
                   key={t.id}
-                  className="relative group bg-white/95 rounded-[2.5rem] border-2 border-white shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl overflow-hidden flex flex-col"
+                  className="relative group bg-white/95 rounded-[2rem] sm:rounded-[2.5rem] border-2 border-white shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl overflow-hidden flex flex-col"
                 >
                   <Link
-                    to={isBlocked ? "#" : `/order/${t.slug}`}
-                    className={`block flex-1 ${isBlocked ? "opacity-75 cursor-not-allowed" : ""}`}
-                    onClick={(e) => handleTableClick(e, t, isBlocked)}
+                    to={`/order/${t.slug}`}
+                    className="block flex-1"
+                    onClick={(e) => handleTableClick(e, t, false)}
                   >
                     <div
-                      className={`p-8 pb-10 text-center bg-gradient-to-br ${vibe.gradient} h-full`}
+                      className={`p-4 sm:p-8 pb-6 sm:pb-10 text-center bg-gradient-to-br ${vibe.gradient} h-full`}
                     >
                       <span
-                        className={`text-6xl mb-4 block transition-transform duration-700 ${
-                          isBlocked
-                            ? "grayscale"
-                            : "group-hover:scale-110 group-hover:rotate-6"
-                        }`}
+                        className={`text-4xl sm:text-6xl mb-2 sm:mb-4 block transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6`}
                       >
-                        {isBlocked ? "🔒" : isPinProtected ? "🔑" : vibe.emoji}
+                        {isPinProtected ? "🔑" : vibe.emoji}
                       </span>
-                      <span
-                        className={`text-ocean-950 font-black text-2xl tracking-tight block ${isBlocked ? "opacity-50" : ""}`}
-                      >
+                      <span className="text-ocean-950 font-black text-lg sm:text-2xl tracking-tight block">
                         {t.name}
                       </span>
                       <p
-                        className={`text-sm font-bold mt-2 tracking-wide uppercase opacity-70 ${
-                          isBlocked
-                            ? "text-sand-600"
-                            : isPinProtected
-                              ? "text-amber-600"
-                              : vibe.accent
+                        className={`text-xs sm:text-sm font-bold mt-1 sm:mt-2 tracking-wide uppercase opacity-70 ${
+                          isPinProtected ? "text-amber-600" : vibe.accent
                         }`}
                       >
-                        {isBlocked
-                          ? "Table is taken"
-                          : isPinProtected
-                            ? "Your Table"
-                            : vibe.tagline}
+                        {isPinProtected ? "Your Table" : vibe.tagline}
                       </p>
 
                       <div
-                        className={`mt-6 inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+                        className={`mt-3 sm:mt-6 inline-flex items-center gap-2 rounded-2xl px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${
                           isMySession
                             ? "bg-palm text-white border-2 border-palm/20 shadow-[0_0_20px_rgba(20,83,45,0.3)]"
-                            : isBlocked
-                              ? "bg-sand-100 text-sand-500 border border-sand-200"
-                              : isPinProtected
-                                ? "bg-amber-50 text-amber-700 border-2 border-amber-200 group-hover:bg-amber-500 group-hover:text-white"
-                                : "bg-white/90 text-ocean-800 border-2 border-ocean-100/50 group-hover:bg-ocean-600 group-hover:text-white group-hover:border-ocean-400"
+                            : isPinProtected
+                              ? "bg-amber-50 text-amber-700 border-2 border-amber-200 group-hover:bg-amber-500 group-hover:text-white"
+                              : "bg-white/90 text-ocean-800 border-2 border-ocean-100/50 group-hover:bg-ocean-600 group-hover:text-white group-hover:border-ocean-400"
                         }`}
                       >
                         {isMySession
                           ? "✨ View Order"
-                          : isBlocked
-                            ? "Occupied"
-                            : isPinProtected
-                              ? "🔑 Enter PIN"
-                              : "Select this table"}
+                          : isPinProtected
+                            ? "🔑 Enter PIN"
+                            : "Select this table"}
                       </div>
                     </div>
                   </Link>
@@ -305,14 +287,16 @@ export default function CustomerTableLanding() {
 
       {/* PIN Modal */}
       {pinModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-ocean-950/60 backdrop-blur-sm">
-          <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl border border-ocean-100 animate-fade-in-up">
-            <div className="text-center mb-6">
-              <span className="text-5xl block mb-3">🔑</span>
-              <h2 className="text-2xl font-black text-ocean-950">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-ocean-950/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] p-6 sm:p-8 w-full max-w-sm shadow-2xl border border-ocean-100 animate-fade-in-up">
+            <div className="text-center mb-4 sm:mb-6">
+              <span className="text-4xl sm:text-5xl block mb-2 sm:mb-3">
+                🔑
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-ocean-950">
                 Enter Table PIN
               </h2>
-              <p className="text-sm text-ocean-600 mt-1 font-medium">
+              <p className="text-xs sm:text-sm text-ocean-600 mt-1 font-medium">
                 {pinModal.tableName} requires a PIN from your waiter.
               </p>
             </div>
@@ -327,7 +311,7 @@ export default function CustomerTableLanding() {
                 setPinError("");
               }}
               onKeyDown={(e) => e.key === "Enter" && handlePinSubmit()}
-              className="w-full px-5 py-4 rounded-2xl bg-ocean-50 border-2 border-ocean-100 text-center text-2xl font-black text-ocean-900 focus:outline-none focus:border-palm tracking-[0.3em] mb-3 [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:_hidden [&::-webkit-inner-spin-button]:_hidden"
+              className="w-full px-3 sm:px-5 py-3 sm:py-4 rounded-2xl bg-ocean-50 border-2 border-ocean-100 text-center text-lg sm:text-2xl font-black text-ocean-900 focus:outline-none focus:border-palm tracking-[0.3em] mb-3 [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:_hidden [&::-webkit-inner-spin-button]:_hidden"
               autoFocus
             />
             {pinError && (
@@ -335,16 +319,16 @@ export default function CustomerTableLanding() {
                 {pinError}
               </p>
             )}
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={() => setPinModal(null)}
-                className="flex-1 py-3 rounded-2xl bg-ocean-50 text-ocean-600 font-black text-sm hover:bg-ocean-100 transition-all"
+                className="flex-1 py-2 sm:py-3 rounded-2xl bg-ocean-50 text-ocean-600 font-black text-xs sm:text-sm hover:bg-ocean-100 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handlePinSubmit}
-                className="flex-1 py-3 rounded-2xl bg-gradient-to-br from-palm to-ocean-700 text-white font-black text-sm hover:opacity-90 transition-all shadow-lg"
+                className="flex-1 py-2 sm:py-3 rounded-2xl bg-gradient-to-br from-palm to-ocean-700 text-white font-black text-xs sm:text-sm hover:opacity-90 transition-all shadow-lg"
               >
                 Confirm
               </button>
@@ -353,12 +337,12 @@ export default function CustomerTableLanding() {
         </div>
       )}
 
-      <footer className="mt-24 py-12 px-6 text-center border-t border-ocean-100/50 w-full bg-white/30 backdrop-blur-sm">
+      <footer className="mt-12 sm:mt-24 py-8 sm:py-12 px-4 sm:px-6 text-center border-t border-ocean-100/50 w-full bg-white/30 backdrop-blur-sm">
         <div className="max-w-2xl mx-auto space-y-4">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-ocean-500">
+          <p className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-ocean-500">
             Created by Kim Guartel
           </p>
-          <p className="text-[11px] font-medium text-ocean-700/80 leading-relaxed max-w-lg mx-auto">
+          <p className="text-[10px] sm:text-[11px] font-medium text-ocean-700/80 leading-relaxed max-w-lg mx-auto">
             This website was created by Kim Guartel, an Information Technology
             student passionate about web development, system design, and
             innovative digital solutions. Dedicated to creating user-friendly
@@ -366,10 +350,10 @@ export default function CustomerTableLanding() {
             with creativity and technical excellence.
           </p>
           <div className="pt-4 border-t border-ocean-200/50 flex flex-col items-center gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-ocean-400">
+            <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ocean-400">
               kimoygwapo@gmail.com
             </p>
-            <p className="text-[10px] font-black uppercase tracking-widest text-ocean-400">
+            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-ocean-400">
               © 2026 Kim Guartel. All Rights Reserved.
             </p>
           </div>

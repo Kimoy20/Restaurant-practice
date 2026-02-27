@@ -149,23 +149,23 @@ export default function CustomerMenu() {
     <div className="min-h-screen bg-island-page">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-ocean-100/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 py-2 sm:py-4 flex items-center justify-between">
           {/* Back Button */}
           <Link
             to="/customer-tables"
-            className="inline-flex items-center gap-2 text-ocean-700 hover:text-palm font-bold transition-all group"
+            className="inline-flex items-center gap-1 sm:gap-2 text-ocean-700 hover:text-palm font-bold transition-all group"
           >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-ocean-50 flex items-center justify-center group-hover:bg-ocean-100 group-hover:-translate-x-1 transition-all">
-              <span className="text-lg sm:text-xl">←</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-ocean-50 flex items-center justify-center group-hover:bg-ocean-100 group-hover:-translate-x-1 transition-all">
+              <span className="text-base sm:text-xl">←</span>
             </div>
           </Link>
 
           {/* Info */}
           <div className="text-center flex flex-col items-center gap-1">
-            <h1 className="heading-display text-xl sm:text-4xl text-ocean-950 font-black">
+            <h1 className="heading-display text-lg sm:text-4xl text-ocean-950 font-black">
               Explore Our Menu
             </h1>
-            <p className="text-[9px] sm:text-[10px] text-ocean-400 font-black uppercase tracking-[0.2em]">
+            <p className="text-[8px] sm:text-[10px] text-ocean-400 font-black uppercase tracking-[0.2em]">
               Siargao · Siaro Kaw
             </p>
           </div>
@@ -173,27 +173,27 @@ export default function CustomerMenu() {
           {/* Burger Menu Button */}
           <button
             onClick={() => setIsDrawerOpen(true)}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/40 backdrop-blur-xl flex flex-col items-center justify-center gap-1.5 hover:bg-ocean-50/80 transition-all border border-ocean-100/50 group shadow-sm ml-2"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/40 backdrop-blur-xl flex flex-col items-center justify-center gap-1 hover:bg-ocean-50/80 transition-all border border-ocean-100/50 group shadow-sm ml-1 sm:ml-2"
           >
-            <div className="w-4 sm:w-5 h-[2px] bg-ocean-900 rounded-full group-hover:bg-palm transition-colors"></div>
-            <div className="w-4 sm:w-5 h-[2px] bg-ocean-900 rounded-full group-hover:bg-palm transition-colors"></div>
-            <div className="w-2.5 sm:w-3 h-[2px] bg-ocean-900 rounded-full self-start ml-2 group-hover:bg-palm transition-colors mt-[-1px]"></div>
+            <div className="w-3 sm:w-5 h-[2px] bg-ocean-900 rounded-full group-hover:bg-palm transition-colors"></div>
+            <div className="w-3 sm:w-5 h-[2px] bg-ocean-900 rounded-full group-hover:bg-palm transition-colors"></div>
+            <div className="w-2 sm:w-3 h-[2px] bg-ocean-900 rounded-full self-start ml-1 sm:ml-2 group-hover:bg-palm transition-colors mt-[-1px]"></div>
           </button>
         </div>
       </header>
 
       {/* Menu Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12 relative pb-24">
+      <main className="max-w-7xl mx-auto px-2 sm:px-6 py-6 sm:py-12 relative pb-20 sm:pb-24">
         <MenuGrid items={menuItems} />{" "}
         {/* Using MenuGrid without onAdd makes it view-only */}
       </main>
 
-      <footer className="mt-auto py-12 px-6 text-center border-t border-ocean-100/50 w-full bg-white/30 backdrop-blur-sm relative z-10">
+      <footer className="mt-auto py-8 sm:py-12 px-4 sm:px-6 text-center border-t border-ocean-100/50 w-full bg-white/30 backdrop-blur-sm relative z-10">
         <div className="max-w-2xl mx-auto space-y-4">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-ocean-500">
+          <p className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-ocean-500">
             Created by Kim Guartel
           </p>
-          <p className="text-[11px] font-medium text-ocean-700/80 leading-relaxed max-w-lg mx-auto">
+          <p className="text-[10px] sm:text-[11px] font-medium text-ocean-700/80 leading-relaxed max-w-lg mx-auto">
             This website was created by Kim Guartel, an Information Technology
             student passionate about web development, system design, and
             innovative digital solutions. Dedicated to creating user-friendly
@@ -201,10 +201,10 @@ export default function CustomerMenu() {
             with creativity and technical excellence.
           </p>
           <div className="pt-4 border-t border-ocean-200/50 flex flex-col items-center gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-ocean-400">
+            <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-ocean-400">
               kimoygwapo@gmail.com
             </p>
-            <p className="text-[10px] font-black uppercase tracking-widest text-ocean-400">
+            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-ocean-400">
               © 2026 Kim Guartel. All Rights Reserved.
             </p>
           </div>
@@ -218,13 +218,13 @@ export default function CustomerMenu() {
       />
 
       {(showQuickScroll || categories.length > 1) && (
-        <div className="fixed right-4 bottom-6 z-40 flex flex-col gap-2 items-end">
+        <div className="fixed right-2 sm:right-4 bottom-4 sm:bottom-6 z-40 flex flex-col gap-2 items-end">
           {categories.length > 1 && (
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setIsCategoryOpen((v) => !v)}
-                className="h-12 px-4 rounded-2xl bg-white/85 backdrop-blur-xl border border-ocean-100/60 shadow-island-sm text-ocean-900 font-black hover:bg-white transition-all active:scale-95"
+                className="h-10 sm:h-12 px-3 sm:px-4 rounded-2xl bg-white/85 backdrop-blur-xl border border-ocean-100/60 shadow-island-sm text-ocean-900 font-black hover:bg-white transition-all active:scale-95 text-xs sm:text-sm"
                 aria-label="Open categories"
                 aria-expanded={isCategoryOpen}
                 title="Categories"
@@ -233,13 +233,13 @@ export default function CustomerMenu() {
               </button>
 
               {isCategoryOpen && (
-                <div className="absolute right-0 bottom-14 w-48 bg-white/95 backdrop-blur-xl border border-ocean-100/60 rounded-2xl shadow-xl overflow-hidden">
+                <div className="absolute right-0 bottom-14 w-40 sm:w-48 bg-white/95 backdrop-blur-xl border border-ocean-100/60 rounded-2xl shadow-xl overflow-hidden">
                   {categories.map((cat) => (
                     <button
                       key={cat}
                       type="button"
                       onClick={() => scrollToCategory(cat)}
-                      className="w-full text-left px-4 py-3 text-xs font-black uppercase tracking-widest text-ocean-800 hover:bg-ocean-50 transition-colors"
+                      className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs font-black uppercase tracking-widest text-ocean-800 hover:bg-ocean-50 transition-colors"
                     >
                       {cat}
                     </button>
@@ -254,7 +254,7 @@ export default function CustomerMenu() {
               <button
                 type="button"
                 onClick={scrollToTop}
-                className="w-12 h-12 rounded-2xl bg-white/85 backdrop-blur-xl border border-ocean-100/60 shadow-island-sm text-ocean-900 font-black hover:bg-white transition-all active:scale-95"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/85 backdrop-blur-xl border border-ocean-100/60 shadow-island-sm text-ocean-900 font-black hover:bg-white transition-all active:scale-95"
                 aria-label="Scroll to top"
                 title="Top"
               >
@@ -263,7 +263,7 @@ export default function CustomerMenu() {
               <button
                 type="button"
                 onClick={scrollToBottom}
-                className="w-12 h-12 rounded-2xl bg-white/85 backdrop-blur-xl border border-ocean-100/60 shadow-island-sm text-ocean-900 font-black hover:bg-white transition-all active:scale-95"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/85 backdrop-blur-xl border border-ocean-100/60 shadow-island-sm text-ocean-900 font-black hover:bg-white transition-all active:scale-95"
                 aria-label="Scroll to bottom"
                 title="Bottom"
               >
