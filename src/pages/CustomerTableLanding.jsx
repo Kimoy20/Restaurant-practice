@@ -212,6 +212,7 @@ export default function CustomerTableLanding() {
           <p className="text-lg sm:text-xl md:text-2xl text-ocean-700 font-bold mb-4 sm:mb-6 italic">
             "Pick a table to view your menu and orders."
           </p>
+          {/* Customer Page - Updated March 5, 2026 - No Auth Required */}
         </div>
 
         {loading ? (
