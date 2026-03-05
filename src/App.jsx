@@ -10,7 +10,7 @@ import AboutBusiness from "./pages/AboutBusiness";
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Navigate to="/customer-tables" replace />} />
       <Route path="/table" element={<TableLanding />} />
       <Route path="/customer-tables" element={<CustomerTableLanding />} />
       <Route path="/order/:tableId" element={<CustomerOrder />} />
@@ -18,7 +18,7 @@ function App() {
       <Route path="/about" element={<AboutBusiness />} />
       <Route path="/login" element={<Login />} />
       <Route path="/kitchen" element={<KitchenDisplay />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/customer-tables" replace />} />
     </Routes>
   );
 }
