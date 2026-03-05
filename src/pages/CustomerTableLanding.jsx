@@ -117,6 +117,28 @@ export default function CustomerTableLanding() {
       { id: "6", slug: "table-6", name: "Table 6" },
     ];
 
+    // Set up PINs for tables 1, 2, 3 to match the desired layout
+    const existingPins = JSON.parse(
+      localStorage.getItem("table_passwords") || "{}",
+    );
+    const targetPins = {
+      1: "123",
+      2: "456",
+      3: "789",
+    };
+
+    // Only set PINs if they don't exist
+    const updatedPins = { ...existingPins };
+    Object.keys(targetPins).forEach((tableId) => {
+      if (!updatedPins[tableId]) {
+        updatedPins[tableId] = targetPins[tableId];
+      }
+    });
+
+    if (JSON.stringify(existingPins) !== JSON.stringify(updatedPins)) {
+      localStorage.setItem("table_passwords", JSON.stringify(updatedPins));
+    }
+
     const loadData = async () => {
       setLoading(true);
 
