@@ -31,7 +31,7 @@ export default function CustomerOrder() {
   const [showQuickScroll, setShowQuickScroll] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
-  
+
   // PIN unlock state
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
@@ -281,6 +281,25 @@ export default function CustomerOrder() {
       "custom_menu_items",
       JSON.stringify([...localCustomItems, newItem]),
     );
+  };
+
+  const handleDeleteItem = (itemId) => {
+    setMenuItems((prev) => prev.filter((item) => item.id !== itemId));
+
+    // Also remove from localStorage custom items
+    const localCustomItems = JSON.parse(
+      localStorage.getItem("custom_menu_items") || "[]",
+    );
+    const updatedCustomItems = localCustomItems.filter(
+      (item) => item.id !== itemId,
+    );
+    localStorage.setItem(
+      "custom_menu_items",
+      JSON.stringify(updatedCustomItems),
+    );
+
+    // Remove from cart if it exists there
+    setCart((prev) => prev.filter((item) => item.id !== itemId));
   };
 
   const addToCart = (item) => {
@@ -573,27 +592,32 @@ export default function CustomerOrder() {
     setPinError("");
     try {
       const existingPins = JSON.parse(
-        localStorage.getItem("table_passwords") || "{}"
+        localStorage.getItem("table_passwords") || "{}",
       );
-      
+
       const fetchedPins = await fetchAllPins();
-      
+
       const targetTableId = table?.id;
-      const targetTableNumericId = table?.id?.toString() || tableId?.replace("table-", "");
-      
-      const correctPin = fetchedPins[targetTableId] || fetchedPins[targetTableNumericId] || existingPins[targetTableNumericId] || existingPins[targetTableId];
-      
+      const targetTableNumericId =
+        table?.id?.toString() || tableId?.replace("table-", "");
+
+      const correctPin =
+        fetchedPins[targetTableId] ||
+        fetchedPins[targetTableNumericId] ||
+        existingPins[targetTableNumericId] ||
+        existingPins[targetTableId];
+
       if (!correctPin) {
         setPinError("No PIN has been set by the staff for this table.");
         setCheckingPin(false);
         return;
       }
-      
+
       if (pinInput.trim() === String(correctPin)) {
         const pinAuth = JSON.parse(
-          localStorage.getItem("pin_authenticated_tables") || "{}"
+          localStorage.getItem("pin_authenticated_tables") || "{}",
         );
-        
+
         pinAuth[targetTableNumericId] = {
           authenticated: true,
           timestamp: Date.now(),
@@ -604,8 +628,11 @@ export default function CustomerOrder() {
           timestamp: Date.now(),
           tableName: table?.name || tableId,
         };
-        
-        localStorage.setItem("pin_authenticated_tables", JSON.stringify(pinAuth));
+
+        localStorage.setItem(
+          "pin_authenticated_tables",
+          JSON.stringify(pinAuth),
+        );
         window.location.reload();
       } else {
         setPinError("Wrong PIN. Please try again.");
@@ -630,7 +657,7 @@ export default function CustomerOrder() {
             This table currently has an active order. If you're with this group,
             please enter the PIN from your waiter to join!
           </p>
-          
+
           <div className="mb-8">
             <input
               type="text"
@@ -732,10 +759,7 @@ export default function CustomerOrder() {
             {/* Cart Button - Available for both Customers and Owners */}
             <button
               onClick={() => {
-                console.log(
-                  "Cart button clicked. Current cartOpen:",
-                  cartOpen,
-                );
+                console.log("Cart button clicked. Current cartOpen:", cartOpen);
                 console.log("Current cart:", cart);
                 console.log("Current cartCount:", cartCount);
                 setCartOpen(true);
@@ -782,6 +806,7 @@ export default function CustomerOrder() {
           items={menuItems}
           onAdd={addToCart}
           onAddNewItem={isCustomer ? undefined : handleAddNewItem}
+          onDeleteItem={isCustomer ? undefined : handleDeleteItem}
         />
 
         {/* Debug Info - Only show on desktop */}

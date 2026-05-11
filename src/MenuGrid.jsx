@@ -60,7 +60,7 @@ const FALLBACK_IMAGES = {
     "https://images.unsplash.com/photo-1515002246320-80252b828131?auto=format&fit=crop&q=80&w=800",
 };
 
-export default function MenuGrid({ items, onAdd, onAddNewItem }) {
+export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
   const [quantities, setQuantities] = useState({});
 
   const [isAdding, setIsAdding] = useState(false);
@@ -79,10 +79,20 @@ export default function MenuGrid({ items, onAdd, onAddNewItem }) {
     image_file: null,
   });
 
+  const [customCategories, setCustomCategories] = useState([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
   const handleAddNewItem = (e) => {
     e.preventDefault();
 
     if (!newItem.name || !newItem.price) return;
+
+    // Add new category if it's custom
+    if (newItem.category && !categoryOrder.includes(newItem.category)) {
+      setCustomCategories((prev) => [...prev, newItem.category]);
+    }
 
     // Add item
 
@@ -127,6 +137,29 @@ export default function MenuGrid({ items, onAdd, onAddNewItem }) {
     });
   };
 
+  const handleAddCategory = () => {
+    if (newCategory.trim() && !customCategories.includes(newCategory.trim())) {
+      setCustomCategories((prev) => [...prev, newCategory.trim()]);
+      setNewCategory("");
+      setShowAddCategory(false);
+    }
+  };
+
+  const handleDeleteItem = (itemId) => {
+    setDeleteConfirm(itemId);
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm && onDeleteItem) {
+      onDeleteItem(deleteConfirm);
+      setDeleteConfirm(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirm(null);
+  };
+
   const byCategory = items.reduce((acc, item) => {
     const cat = item.category || "Other";
 
@@ -137,7 +170,17 @@ export default function MenuGrid({ items, onAdd, onAddNewItem }) {
     return acc;
   }, {});
 
-  const categoryOrder = ["Pulutan", "Main", "Drinks", "Other"];
+  const categoryOrder = [
+    "Pulutan",
+    "Main",
+    "Drinks",
+    "Other",
+    ...customCategories,
+  ];
+
+  const getAllCategories = () => {
+    return [...categoryOrder];
+  };
 
   const sortedCategories = Object.entries(byCategory).sort(
     ([a], [b]) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b),
@@ -237,21 +280,47 @@ export default function MenuGrid({ items, onAdd, onAddNewItem }) {
                     Category
                   </label>
 
-                  <select
+                  <input
+                    type="text"
+                    list="category-list"
                     className="w-full px-4 py-3 rounded-xl bg-ocean-50 border border-ocean-100 focus:outline-none focus:ring-2 focus:ring-palm font-medium"
                     value={newItem.category}
-                    onChange={(e) =>
-                      setNewItem({ ...newItem, category: e.target.value })
-                    }
-                  >
-                    <option>Pulutan</option>
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setNewItem({ ...newItem, category: value });
 
-                    <option>Main</option>
+                      // Auto-add new category if it's not in the list and user presses Enter or Tab
+                      if (value && !getAllCategories().includes(value)) {
+                        const timer = setTimeout(() => {
+                          if (
+                            value &&
+                            !customCategories.includes(value) &&
+                            !["Pulutan", "Main", "Drinks", "Other"].includes(
+                              value,
+                            )
+                          ) {
+                            setCustomCategories((prev) => [...prev, value]);
+                          }
+                        }, 1000); // Add after 1 second of no typing
+                        return () => clearTimeout(timer);
+                      }
+                    }}
+                    placeholder="Type or select category..."
+                  />
 
-                    <option>Drinks</option>
+                  <datalist id="category-list">
+                    <option value="Pulutan" />
+                    <option value="Main" />
+                    <option value="Drinks" />
+                    <option value="Other" />
+                    {customCategories.map((cat) => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
 
-                    <option>Other</option>
-                  </select>
+                  <p className="text-xs text-ocean-500 mt-1">
+                    Type a new category or select from existing ones
+                  </p>
                 </div>
               </div>
 
@@ -397,6 +466,20 @@ export default function MenuGrid({ items, onAdd, onAddNewItem }) {
                       ₱{Number(item.price).toFixed(0)}
                     </span>
                   </div>
+
+                  {/* Delete Button - Only show for owner */}
+                  {onDeleteItem && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="absolute top-3 left-3 sm:top-4 sm:left-4 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-500/90 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-sm border border-white/50 group"
+                      title="Delete item"
+                    >
+                      <span className="text-sm sm:text-base font-bold group-hover:scale-110 transition-transform">
+                        🗑️
+                      </span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Content Container */}
@@ -467,6 +550,41 @@ export default function MenuGrid({ items, onAdd, onAddNewItem }) {
           </div>
         </section>
       ))}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ocean-950/60 backdrop-blur-sm">
+          <div className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-2xl max-w-sm w-full border border-ocean-100 animate-fade-in-up">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🗑️</span>
+              </div>
+              <h3 className="text-xl font-black text-ocean-950 mb-2">
+                Delete Item?
+              </h3>
+              <p className="text-sm text-ocean-600">
+                This action cannot be undone. The item will be permanently
+                removed from the menu.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={cancelDelete}
+                className="flex-1 py-3 rounded-xl bg-ocean-50 text-ocean-600 font-bold hover:bg-ocean-100 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-black hover:bg-red-600 transition-all"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
