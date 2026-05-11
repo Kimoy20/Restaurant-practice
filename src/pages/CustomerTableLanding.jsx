@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { fetchAllPins } from "../lib/tablePins";
 
+import CustomerDrawer from "../CustomerDrawer";
+
 const TABLE_VIBES = [
   {
     emoji: "🌊",
@@ -51,6 +53,7 @@ export default function CustomerTableLanding() {
   const [pinModal, setPinModal] = useState(null); // { tableSlug, tableId, tableName }
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const handleTableClick = (e, t, isTaken) => {
     if (isTaken) {
@@ -261,10 +264,40 @@ export default function CustomerTableLanding() {
             <p>Loading tables…</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 w-full max-w-3xl mx-auto">
-            {tables.map((t, i) => {
-              const vibe = TABLE_VIBES[i % TABLE_VIBES.length];
-              const status = getTableStatus(t);
+          <>
+            {/* Show a "View My Orders" button if they have active orders */}
+            {JSON.parse(localStorage.getItem("my_active_orders") || "[]").length > 0 && (
+              <div className="flex justify-center mb-8 animate-fade-in-up">
+                <button
+                  onClick={() => setIsDrawerOpen(true)}
+                  className="bg-palm text-white font-black px-6 py-3 rounded-2xl shadow-lg shadow-palm/30 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
+                >
+                  <span className="text-xl">🧾</span>
+                  <span>View My Orders</span>
+                </button>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 w-full max-w-3xl mx-auto">
+              {tables
+                .filter((t) => {
+                  // Only filter if the user has an active session or PIN auth
+                  const myOrders = JSON.parse(localStorage.getItem("my_active_orders") || "[]");
+                  const pinAuth = JSON.parse(localStorage.getItem("pin_authenticated_tables") || "{}");
+                  
+                  const hasAnySession = myOrders.length > 0 || Object.keys(pinAuth).length > 0;
+                  
+                  if (!hasAnySession) return true; // Show all if they haven't picked a table yet
+                  
+                  // If they have picked a table, only show THEIR tables
+                  const isMyOrder = myOrders.some((o) => o.tableId === t.slug || o.tableId === t.id);
+                  const isMyPin = pinAuth[t.id]?.authenticated || pinAuth[t.slug]?.authenticated;
+                  
+                  return isMyOrder || isMyPin;
+                })
+                .map((t, i) => {
+                  const vibe = TABLE_VIBES[i % TABLE_VIBES.length];
+                  const status = getTableStatus(t);
 
               const isTaken = false; // Never taken anymore
               const isMySession = status === "my_session";
@@ -323,6 +356,7 @@ export default function CustomerTableLanding() {
               );
             })}
           </div>
+          </>
         )}
       </div>
 
@@ -400,6 +434,13 @@ export default function CustomerTableLanding() {
           </div>
         </div>
       </footer>
+
+      {/* Drawer */}
+      <CustomerDrawer
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        tableId={null} // Null tableId loads all local orders for the customer
+      />
     </div>
   );
 }
