@@ -717,7 +717,7 @@ export default function CustomerOrder() {
                   ? "Dugang Order — Add More"
                   : "Island BBQ & Kitchen"}
               </p>
-              {!isCustomer && hasActiveOrder && (
+              {hasActiveOrder && (
                 <button
                   onClick={handleCheckout}
                   className="bg-palm/10 text-palm hover:bg-palm hover:text-white px-2 sm:px-3 py-1 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all border border-palm/20"
@@ -753,15 +753,17 @@ export default function CustomerOrder() {
               )}
             </button>
 
-            {/* Burger Menu Button */}
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="w-8 h-8 sm:w-12 sm:h-12 rounded-2xl bg-white/40 backdrop-blur-xl flex flex-col items-center justify-center gap-1 hover:bg-ocean-50/80 transition-all border border-ocean-100/50 group shadow-sm ml-1 sm:ml-2"
-            >
-              <div className="w-3 sm:w-5 h-[2px] sm:h-[2.5px] bg-ocean-900 rounded-full group-hover:bg-palm transition-colors"></div>
-              <div className="w-3 sm:w-5 h-[2px] sm:h-[2.5px] bg-ocean-900 rounded-full group-hover:bg-palm transition-colors"></div>
-              <div className="w-2 sm:w-3 h-[2px] sm:h-[2.5px] bg-ocean-900 rounded-full self-start ml-2 sm:ml-3 group-hover:bg-palm transition-colors mt-[-1px]"></div>
-            </button>
+            {/* Burger Menu Button - Only for Owners */}
+            {!isCustomer && (
+              <button
+                onClick={() => setDrawerOpen(true)}
+                className="w-8 h-8 sm:w-12 sm:h-12 rounded-2xl bg-white/40 backdrop-blur-xl flex flex-col items-center justify-center gap-1 hover:bg-ocean-50/80 transition-all border border-ocean-100/50 group shadow-sm ml-1 sm:ml-2"
+              >
+                <div className="w-3 sm:w-5 h-[2px] sm:h-[2.5px] bg-ocean-900 rounded-full group-hover:bg-palm transition-colors"></div>
+                <div className="w-3 sm:w-5 h-[2px] sm:h-[2.5px] bg-ocean-900 rounded-full group-hover:bg-palm transition-colors"></div>
+                <div className="w-2 sm:w-3 h-[2px] sm:h-[2.5px] bg-ocean-900 rounded-full self-start ml-2 sm:ml-3 group-hover:bg-palm transition-colors mt-[-1px]"></div>
+              </button>
+            )}
           </div>
         </div>
       </header>
