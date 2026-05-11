@@ -5,7 +5,7 @@ import MenuGrid from "../MenuGrid";
 import CartDrawer from "../CartDrawer";
 import Receipt from "../Receipt";
 import CustomerDrawer from "../CustomerDrawer";
-
+import { fetchAllPins } from "../lib/tablePins";
 export default function CustomerOrder() {
   const { tableId } = useParams();
   const userRole = localStorage.getItem("user_role");
@@ -31,6 +31,11 @@ export default function CustomerOrder() {
   const [showQuickScroll, setShowQuickScroll] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
+  
+  // PIN unlock state
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [checkingPin, setCheckingPin] = useState(false);
 
   const mockMenuItems = [
     {
@@ -563,6 +568,55 @@ export default function CustomerOrder() {
     );
   }
 
+  const handleUnlockPin = async () => {
+    setCheckingPin(true);
+    setPinError("");
+    try {
+      const existingPins = JSON.parse(
+        localStorage.getItem("table_passwords") || "{}"
+      );
+      
+      const fetchedPins = await fetchAllPins();
+      
+      const targetTableId = table?.id;
+      const targetTableNumericId = table?.id?.toString() || tableId?.replace("table-", "");
+      
+      const correctPin = fetchedPins[targetTableId] || fetchedPins[targetTableNumericId] || existingPins[targetTableNumericId] || existingPins[targetTableId];
+      
+      if (!correctPin) {
+        setPinError("No PIN has been set by the staff for this table.");
+        setCheckingPin(false);
+        return;
+      }
+      
+      if (pinInput.trim() === String(correctPin)) {
+        const pinAuth = JSON.parse(
+          localStorage.getItem("pin_authenticated_tables") || "{}"
+        );
+        
+        pinAuth[targetTableNumericId] = {
+          authenticated: true,
+          timestamp: Date.now(),
+          tableName: table?.name || tableId,
+        };
+        pinAuth[tableId] = {
+          authenticated: true,
+          timestamp: Date.now(),
+          tableName: table?.name || tableId,
+        };
+        
+        localStorage.setItem("pin_authenticated_tables", JSON.stringify(pinAuth));
+        window.location.reload();
+      } else {
+        setPinError("Wrong PIN. Please try again.");
+      }
+    } catch (e) {
+      console.error(e);
+      setPinError("Error checking PIN.");
+    }
+    setCheckingPin(false);
+  };
+
   if (isTakenByOther) {
     return (
       <div className="min-h-screen bg-island-page flex flex-col items-center justify-center p-6 text-center">
@@ -572,10 +626,39 @@ export default function CustomerOrder() {
           <h1 className="text-3xl font-black text-ocean-950 mb-4 tracking-tight">
             Table is taken
           </h1>
-          <p className="text-ocean-700 font-medium leading-relaxed mb-8">
+          <p className="text-ocean-700 font-medium leading-relaxed mb-6">
             This table currently has an active order. If you're with this group,
-            please ask them to add to their order!
+            please enter the PIN from your waiter to join!
           </p>
+          
+          <div className="mb-8">
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="Enter PIN (1–100)"
+              value={pinInput}
+              onChange={(e) => {
+                setPinInput(e.target.value.replace(/[^0-9]/g, ""));
+                setPinError("");
+              }}
+              onKeyDown={(e) => e.key === "Enter" && handleUnlockPin()}
+              className="w-full px-5 py-4 rounded-2xl bg-ocean-50 border-2 border-ocean-100 text-center text-xl font-black text-ocean-900 focus:outline-none focus:border-palm tracking-[0.3em] mb-3"
+            />
+            {pinError && (
+              <p className="text-red-500 text-xs font-bold text-center mb-3">
+                {pinError}
+              </p>
+            )}
+            <button
+              onClick={handleUnlockPin}
+              disabled={checkingPin || !pinInput}
+              className="w-full btn-primary py-3 rounded-2xl mb-2 disabled:opacity-50"
+            >
+              {checkingPin ? "Verifying..." : "Unlock Table"}
+            </button>
+          </div>
+
           <button
             onClick={() =>
               (window.location.href = isCustomer
@@ -646,31 +729,29 @@ export default function CustomerOrder() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Cart Button - Only for Owners */}
-            {!isCustomer && (
-              <button
-                onClick={() => {
-                  console.log(
-                    "Cart button clicked. Current cartOpen:",
-                    cartOpen,
-                  );
-                  console.log("Current cart:", cart);
-                  console.log("Current cartCount:", cartCount);
-                  setCartOpen(true);
-                }}
-                className="relative inline-flex items-center gap-1 sm:gap-2 bg-gradient-to-br from-ocean-500 via-ocean-600 to-ocean-800 text-white font-black px-3 py-2 sm:px-6 sm:py-3 rounded-2xl shadow-lg border border-white/20 hover:shadow-ocean-200/50 hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                <span className="text-lg sm:text-xl">🛒</span>
-                <span className="hidden sm:inline text-xs uppercase tracking-wider">
-                  My Plate
+            {/* Cart Button - Available for both Customers and Owners */}
+            <button
+              onClick={() => {
+                console.log(
+                  "Cart button clicked. Current cartOpen:",
+                  cartOpen,
+                );
+                console.log("Current cart:", cart);
+                console.log("Current cartCount:", cartCount);
+                setCartOpen(true);
+              }}
+              className="relative inline-flex items-center gap-1 sm:gap-2 bg-gradient-to-br from-ocean-500 via-ocean-600 to-ocean-800 text-white font-black px-3 py-2 sm:px-6 sm:py-3 rounded-2xl shadow-lg border border-white/20 hover:shadow-ocean-200/50 hover:scale-[1.02] active:scale-95 transition-all"
+            >
+              <span className="text-lg sm:text-xl">🛒</span>
+              <span className="hidden sm:inline text-xs uppercase tracking-wider">
+                My Plate
+              </span>
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-palm text-[9px] sm:text-[10px] text-white ring-3 sm:ring-4 ring-white shadow-lg animate-fade-in">
+                  {cartCount}
                 </span>
-                {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-palm text-[9px] sm:text-[10px] text-white ring-3 sm:ring-4 ring-white shadow-lg animate-fade-in">
-                    {cartCount}
-                  </span>
-                )}
-              </button>
-            )}
+              )}
+            </button>
 
             {/* Burger Menu Button */}
             <button
@@ -697,7 +778,7 @@ export default function CustomerOrder() {
         )}
         <MenuGrid
           items={menuItems}
-          onAdd={isCustomer ? undefined : addToCart}
+          onAdd={addToCart}
           onAddNewItem={isCustomer ? undefined : handleAddNewItem}
         />
 

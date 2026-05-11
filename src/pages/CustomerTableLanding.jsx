@@ -224,9 +224,24 @@ export default function CustomerTableLanding() {
     return "available";
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("user_role");
+    localStorage.removeItem("current_user");
+    navigate("/login"); // or navigate("/") depending on default route
+  };
+
   return (
     <div className="min-h-screen bg-island-page relative pb-8 sm:pb-10 flex flex-col items-center justify-center">
-      <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 py-8 sm:py-12 flex-1 flex flex-col">
+      <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-20">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-2 bg-white/40 backdrop-blur-md rounded-xl text-ocean-700 font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all shadow-sm border border-white/60 group"
+        >
+          <span className="text-xs uppercase tracking-widest">Log out</span>
+          <span className="text-sm group-hover:translate-x-1 transition-transform">🚪</span>
+        </button>
+      </div>
+      <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 py-8 sm:py-12 flex-1 flex flex-col mt-6 sm:mt-0">
         <div className="text-center mb-8 sm:mb-16 relative z-10 animate-fade-in-up">
           <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-white shadow-xl mb-4 sm:mb-8 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
             <span className="text-3xl sm:text-4xl">🌴</span>
