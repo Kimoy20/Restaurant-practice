@@ -191,8 +191,19 @@ export default function CustomerOrder() {
         const savedCustomItems = JSON.parse(
           localStorage.getItem("custom_menu_items") || "[]",
         );
-        if (menuData && menuData.length > 0) {
-          setMenuItems([...menuData, ...savedCustomItems]);
+
+        // Get list of deleted items from localStorage
+        const deletedItems = JSON.parse(
+          localStorage.getItem("deleted_menu_items") || "[]",
+        );
+
+        // Filter out deleted items from database data
+        const filteredMenuData = menuData
+          ? menuData.filter((item) => !deletedItems.includes(item.id))
+          : [];
+
+        if (filteredMenuData && filteredMenuData.length > 0) {
+          setMenuItems([...filteredMenuData, ...savedCustomItems]);
         } else {
           setMenuItems([...mockMenuItems, ...savedCustomItems]);
         }
@@ -283,10 +294,31 @@ export default function CustomerOrder() {
     );
   };
 
-  const handleDeleteItem = (itemId) => {
-    setMenuItems((prev) => prev.filter((item) => item.id !== itemId));
+  const handleDeleteItem = async (itemId) => {
+    console.log("Deleting item:", itemId);
 
-    // Also remove from localStorage custom items
+    // Check if this is a custom item (starts with "custom-")
+    const isCustomItem = itemId.startsWith("custom-");
+    console.log("Is custom item:", isCustomItem);
+
+    // Update local state first
+    setMenuItems((prev) => {
+      const filtered = prev.filter((item) => item.id !== itemId);
+      console.log("Updated menu items count:", filtered.length);
+      return filtered;
+    });
+
+    // Track deleted items in localStorage
+    const deletedItems = JSON.parse(
+      localStorage.getItem("deleted_menu_items") || "[]",
+    );
+    if (!deletedItems.includes(itemId)) {
+      deletedItems.push(itemId);
+      localStorage.setItem("deleted_menu_items", JSON.stringify(deletedItems));
+      console.log("Added to deleted items list:", itemId);
+    }
+
+    // Remove from localStorage custom items
     const localCustomItems = JSON.parse(
       localStorage.getItem("custom_menu_items") || "[]",
     );
@@ -297,9 +329,42 @@ export default function CustomerOrder() {
       "custom_menu_items",
       JSON.stringify(updatedCustomItems),
     );
+    console.log("Updated localStorage items:", updatedCustomItems.length);
 
     // Remove from cart if it exists there
-    setCart((prev) => prev.filter((item) => item.id !== itemId));
+    setCart((prev) => {
+      const filtered = prev.filter((item) => item.id !== itemId);
+      console.log("Updated cart items:", filtered.length);
+      return filtered;
+    });
+
+    // Only delete from Supabase if it's NOT a custom item
+    if (!isCustomItem && supabase) {
+      console.log("Deleting from Supabase...");
+      await deleteItemFromSupabase(itemId);
+    } else {
+      console.log(
+        "Skipping Supabase delete (custom item or no supabase connection)",
+      );
+    }
+  };
+
+  const deleteItemFromSupabase = async (itemId) => {
+    try {
+      console.log("Attempting to delete from Supabase:", itemId);
+      const { data, error } = await supabase
+        .from("menu_items")
+        .delete()
+        .eq("id", itemId);
+
+      if (error) {
+        console.error("Error deleting item from Supabase:", error);
+      } else {
+        console.log("Successfully deleted item from Supabase:", itemId, data);
+      }
+    } catch (error) {
+      console.error("Supabase delete error:", error);
+    }
   };
 
   const addToCart = (item) => {
