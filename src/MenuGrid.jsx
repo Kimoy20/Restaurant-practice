@@ -133,6 +133,12 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
 
     setIsAdding(false);
 
+    // Reset form but preserve the current category if it's valid
+    const currentCategory =
+      newItem.category && getAllCategories().includes(newItem.category)
+        ? newItem.category
+        : "Pulutan";
+
     setNewItem({
       name: "",
 
@@ -142,7 +148,7 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
 
       image_url: "",
 
-      category: "Pulutan",
+      category: currentCategory,
 
       image_file: null,
     });
