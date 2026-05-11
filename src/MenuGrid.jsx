@@ -92,6 +92,8 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
     category: "Pulutan",
     image_file: null,
   });
+  const [renamingCategory, setRenamingCategory] = useState(null);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   const handleAddNewItem = (e) => {
     e.preventDefault();
@@ -179,6 +181,62 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
       category: item.category || "Pulutan",
       image_file: null,
     });
+  };
+
+  const handleRenameCategory = (category) => {
+    setRenamingCategory(category);
+    setNewCategoryName(category);
+  };
+
+  const confirmRenameCategory = () => {
+    if (!newCategoryName.trim() || !renamingCategory) return;
+
+    // Don't allow renaming to existing categories
+    const allCategories = getAllCategories();
+    if (
+      allCategories.includes(newCategoryName) &&
+      newCategoryName !== renamingCategory
+    ) {
+      return;
+    }
+
+    // Update items with old category name
+    if (onAddNewItem) {
+      const updatedItems = items.map((item) => {
+        if (item.category === renamingCategory) {
+          return { ...item, category: newCategoryName };
+        }
+        return item;
+      });
+
+      // Update each item individually to trigger the callback
+      updatedItems.forEach((item) => {
+        onAddNewItem(item);
+      });
+    }
+
+    // Update custom categories if it was a custom category
+    if (customCategories.includes(renamingCategory)) {
+      setCustomCategories((prev) =>
+        prev.map((cat) => (cat === renamingCategory ? newCategoryName : cat)),
+      );
+    }
+
+    // Update any items in form that have the old category name
+    if (newItem.category === renamingCategory) {
+      setNewItem((prev) => ({ ...prev, category: newCategoryName }));
+    }
+    if (editItem.category === renamingCategory) {
+      setEditItem((prev) => ({ ...prev, category: newCategoryName }));
+    }
+
+    setRenamingCategory(null);
+    setNewCategoryName("");
+  };
+
+  const cancelRenameCategory = () => {
+    setRenamingCategory(null);
+    setNewCategoryName("");
   };
 
   const handleUpdateItem = (e) => {
@@ -473,14 +531,56 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
                   {CATEGORY_EMOJIS[category] || "🍽️"}
                 </span>
 
-                <div>
-                  <h2 className="heading-display text-2xl sm:text-5xl font-extrabold bg-gradient-to-r from-ocean-800 via-ocean-600 to-palm bg-clip-text text-transparent">
-                    {category}
-                  </h2>
+                <div className="flex items-center gap-3">
+                  {renamingCategory === category ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && confirmRenameCategory()
+                        }
+                        className="px-3 py-1 rounded-lg bg-ocean-50 border border-ocean-100 focus:outline-none focus:ring-2 focus:ring-palm text-sm font-medium"
+                        placeholder="Category name..."
+                      />
+                      <button
+                        onClick={confirmRenameCategory}
+                        className="px-2 py-1 rounded-lg bg-palm text-white font-bold text-xs hover:bg-palm/80"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={cancelRenameCategory}
+                        className="px-2 py-1 rounded-lg bg-ocean-200 text-ocean-700 font-bold text-xs hover:bg-ocean-300"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <h2 className="heading-display text-2xl sm:text-5xl font-extrabold bg-gradient-to-r from-ocean-800 via-ocean-600 to-palm bg-clip-text text-transparent">
+                          {category}
+                        </h2>
 
-                  <p className="text-sand-600 text-sm font-semibold tracking-wide uppercase mt-1">
-                    {list.length} {list.length === 1 ? "dish" : "available"}
-                  </p>
+                        <p className="text-sand-600 text-sm font-semibold tracking-wide uppercase mt-1">
+                          {list.length}{" "}
+                          {list.length === 1 ? "dish" : "available"}
+                        </p>
+                      </div>
+
+                      {onDeleteItem && (
+                        <button
+                          onClick={() => handleRenameCategory(category)}
+                          className="p-2 rounded-lg bg-ocean-100 text-ocean-600 hover:bg-ocean-200 transition-all"
+                          title="Rename category"
+                        >
+                          <span className="text-sm">✏️</span>
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
 
