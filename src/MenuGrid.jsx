@@ -60,10 +60,13 @@ const FALLBACK_IMAGES = {
     "https://images.unsplash.com/photo-1515002246320-80252b828131?auto=format&fit=crop&q=80&w=800",
 };
 
-export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
+export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem, onOpenAddForm }) {
   const [quantities, setQuantities] = useState({});
 
   const [isAdding, setIsAdding] = useState(false);
+
+  // Allow parent to open the add form
+  if (onOpenAddForm) onOpenAddForm.current = () => setIsAdding(true);
 
   const [newItem, setNewItem] = useState({
     name: "",
@@ -134,6 +137,7 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
     setIsAdding(false);
 
     // Reset form but preserve the current category
+    const currentCategory = newItem.category || "Pulutan";
     setNewItem({
       name: "",
 
@@ -143,7 +147,7 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
 
       image_url: "",
 
-      category: newItem.category, // Keep the current category
+      category: currentCategory, // Keep the current category
 
       image_file: null,
     });
@@ -280,7 +284,8 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
     });
   };
 
-  const byCategory = items.reduce((acc, item) => {
+  const byCategory = (items || []).reduce((acc, item) => {
+    if (!item) return acc;
     const cat = item.category || "Other";
 
     if (!acc[cat]) acc[cat] = [];
@@ -332,9 +337,10 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
 
   return (
     <div className="w-full space-y-10 pb-8 relative">
+      {/* Floating Add Menu Item bar removed - button now lives above Categories in CustomerOrder */}
       {isAdding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ocean-950/40 backdrop-blur-sm">
-          <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-md w-full border border-ocean-100 animate-fade-in-up">
+          <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-md w-full border border-ocean-100 animate-fade-in-up max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-black text-ocean-950">
                 Add New Dish
@@ -585,14 +591,7 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
                 </div>
               </div>
 
-              {onAddNewItem && category === "Pulutan" && (
-                <button
-                  onClick={() => setIsAdding(true)}
-                  className="bg-white/80 backdrop-blur-md text-emerald-600 border-2 border-emerald-500/30 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 font-black px-4 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-sm transition-all text-sm"
-                >
-                  + Add Menu Item
-                </button>
-              )}
+
             </div>
 
             <div className="h-1.5 w-24 bg-gradient-to-r from-ocean-500 via-ocean-300 to-transparent rounded-full shadow-sm" />
@@ -601,7 +600,7 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
           {/* Menu Items Grid */}
 
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4 sm:px-6 lg:px-8">
-            {list.map((item) => (
+            {list.filter(item => item && item.id).map((item) => (
               <div
                 key={item.id}
                 className="group h-full rounded-[1.75rem] sm:rounded-[2.5rem] overflow-hidden bg-white/95 backdrop-blur-md border-2 border-white shadow-island hover:shadow-island-lg transition-all duration-500 hover:-translate-y-2 hover:border-ocean-200/50 flex flex-col"

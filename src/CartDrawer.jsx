@@ -11,14 +11,18 @@ export default function CartDrawer({
   // Aggregate items from all session orders
   const sessionItemMap = new Map();
   sessionOrders.forEach(order => {
-    order.items.forEach(item => {
-      if (sessionItemMap.has(item.id)) {
-        const existing = sessionItemMap.get(item.id);
-        existing.quantity += item.quantity;
-      } else {
-        sessionItemMap.set(item.id, { ...item });
-      }
-    });
+    if (order && order.items) {
+      order.items.forEach(item => {
+        if (item && item.id) {
+          if (sessionItemMap.has(item.id)) {
+            const existing = sessionItemMap.get(item.id);
+            existing.quantity += (item.quantity || 1);
+          } else {
+            sessionItemMap.set(item.id, { ...item });
+          }
+        }
+      });
+    }
   });
   const sessionItems = Array.from(sessionItemMap.values());
   const sessionTotal = sessionItems.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0);

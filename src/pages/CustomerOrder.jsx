@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import MenuGrid from "../MenuGrid";
@@ -28,6 +28,7 @@ export default function CustomerOrder() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState(null);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
+  const menuGridRef = useRef(null);
   const [showQuickScroll, setShowQuickScroll] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -199,7 +200,7 @@ export default function CustomerOrder() {
 
         // Filter out deleted items from database data
         const filteredMenuData = menuData
-          ? menuData.filter((item) => !deletedItems.includes(item.id))
+          ? menuData.filter((item) => item && item.id && !deletedItems.includes(item.id))
           : [];
 
         if (filteredMenuData && filteredMenuData.length > 0) {
@@ -283,14 +284,40 @@ export default function CustomerOrder() {
     setIsCategoryOpen(false);
   };
 
-  const handleAddNewItem = (newItem) => {
-    setMenuItems((prev) => [...prev, newItem]);
+  const handleAddNewItem = async (newItem) => {
+    let itemToSave = { ...newItem };
+    
+    // If we have a supabase connection, try to save it there first
+    if (supabase && !isCustomer) {
+      try {
+        console.log("Saving new menu item to Supabase:", newItem);
+        // Remove the temporary 'custom-' ID so Supabase can generate a real one
+        const { id, ...itemData } = newItem;
+        
+        const { data, error } = await supabase
+          .from("menu_items")
+          .insert([itemData])
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error saving menu item to Supabase:", error);
+        } else if (data) {
+          console.log("Successfully saved menu item to Supabase:", data);
+          itemToSave = data;
+        }
+      } catch (err) {
+        console.error("Unexpected error saving to Supabase:", err);
+      }
+    }
+
+    setMenuItems((prev) => [...prev, itemToSave]);
     const localCustomItems = JSON.parse(
       localStorage.getItem("custom_menu_items") || "[]",
     );
     localStorage.setItem(
       "custom_menu_items",
-      JSON.stringify([...localCustomItems, newItem]),
+      JSON.stringify([...localCustomItems, itemToSave]),
     );
   };
 
@@ -481,25 +508,36 @@ export default function CustomerOrder() {
       console.log("Main order successfully saved to Supabase ✅", orderData);
 
       // 2️⃣ Insert each item into order_items table
-      const itemsToInsert = cart.map((item) => ({
-        order_id: orderData.id,
-        menu_item_id: item.id,
-        quantity: item.quantity,
-        notes: "",
-      }));
+      // Only insert items that have a valid UUID (not custom- string)
+      const itemsToInsert = cart
+        .filter(item => {
+          // Simple UUID check: if it contains 'custom-', it's not a valid UUID for Supabase
+          const idStr = String(item.id);
+          return !idStr.includes("custom-");
+        })
+        .map((item) => ({
+          order_id: orderData.id,
+          menu_item_id: item.id,
+          quantity: item.quantity,
+          notes: "",
+        }));
 
-      console.log("Inserting order items:", itemsToInsert);
+      console.log("Inserting order items (filtered for Supabase):", itemsToInsert);
+      
+      // Only proceed with insert if there are valid items to save to the DB
+      if (itemsToInsert.length > 0) {
+        const { error: itemsError } = await supabase
+          .from("order_items")
+          .insert(itemsToInsert);
 
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(itemsToInsert);
-
-      if (itemsError) {
-        console.error("Order items insert error:", itemsError);
-        alert(
-          `Failed to save order items: ${itemsError.message || JSON.stringify(itemsError)}`,
-        );
-        return;
+        if (itemsError) {
+          console.error("Order items insert error:", itemsError);
+          // We show an alert but continue because the order is already in 'orders' table
+          // and we track everything locally anyway.
+          alert(
+            `Warning: Some items couldn't be saved to the database: ${itemsError.message}`,
+          );
+        }
       }
 
       console.log("Order items successfully saved to Supabase ✅");
@@ -556,14 +594,18 @@ export default function CustomerOrder() {
     const itemMap = new Map();
 
     sessionOrders.forEach((order) => {
-      order.items.forEach((item) => {
-        if (itemMap.has(item.id)) {
-          const existing = itemMap.get(item.id);
-          existing.quantity += item.quantity;
-        } else {
-          itemMap.set(item.id, { ...item });
-        }
-      });
+      if (order && order.items) {
+        order.items.forEach((item) => {
+          if (item && item.id) {
+            if (itemMap.has(item.id)) {
+              const existing = itemMap.get(item.id);
+              existing.quantity += (item.quantity || 1);
+            } else {
+              itemMap.set(item.id, { ...item });
+            }
+          }
+        });
+      }
     });
 
     const finalOrder = {
@@ -802,6 +844,47 @@ export default function CustomerOrder() {
                 />
               </div>
             )}
+            {userRole === "owner" && (
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-1">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-ocean-400">
+                    Customer
+                  </p>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Enter name..."
+                    className="bg-white/50 border border-ocean-100/50 text-xs font-bold text-ocean-900 placeholder-ocean-400 focus:outline-none focus:ring-2 focus:ring-palm/30 rounded-xl px-3 py-1.5 w-24 sm:w-32"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-ocean-400">
+                    Table PIN
+                  </p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={
+                      JSON.parse(localStorage.getItem("table_passwords") || "{}")[
+                        tableId?.replace("table-", "")
+                      ] || "PIN"
+                    }
+                    onChange={async (e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, "");
+                      if (val && val.length <= 3) {
+                        const numericId = tableId?.replace("table-", "");
+                        const result = await (await import("../lib/tablePins")).savePin(numericId, val);
+                        if (result.ok) {
+                          e.target.placeholder = val;
+                        }
+                      }
+                    }}
+                    className="bg-white/50 border border-ocean-100/50 text-xs font-bold text-ocean-900 placeholder-ocean-400 focus:outline-none focus:ring-2 focus:ring-palm/30 rounded-xl px-3 py-1.5 w-16 sm:w-20 text-center"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center gap-3">
               <p className="text-[8px] sm:text-[10px] text-ocean-400 font-black uppercase tracking-[0.2em]">
@@ -872,6 +955,7 @@ export default function CustomerOrder() {
           onAdd={addToCart}
           onAddNewItem={isCustomer ? undefined : handleAddNewItem}
           onDeleteItem={isCustomer ? undefined : handleDeleteItem}
+          onOpenAddForm={menuGridRef}
         />
 
         {/* Debug Info - Only show on desktop */}
@@ -903,8 +987,20 @@ export default function CustomerOrder() {
         tableId={tableId}
       />
 
-      {!isCustomer && (showQuickScroll || categories.length > 1) && (
+      {(showQuickScroll || categories.length > 1 || !isCustomer) && (
         <div className="fixed right-2 sm:right-4 bottom-4 sm:bottom-6 z-40 flex flex-col gap-2 items-end">
+          {/* Add Menu Item Button - only for Owners */}
+          {!isCustomer && (
+            <button
+              type="button"
+              onClick={() => menuGridRef.current?.()}
+              className="h-10 sm:h-12 px-3 sm:px-4 rounded-2xl bg-emerald-500 text-white shadow-lg font-black hover:bg-emerald-600 transition-all active:scale-95 text-xs sm:text-sm flex items-center gap-2"
+              title="Add Menu Item"
+            >
+              <span className="text-base sm:text-lg">+Add</span>
+              <span className="hidden sm:inline">Add Item</span>
+            </button>
+          )}
           {categories.length > 1 && (
             <div className="relative">
               <button
