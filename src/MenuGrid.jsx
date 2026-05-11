@@ -75,6 +75,8 @@ export default function MenuGrid({ items, onAdd, onAddNewItem }) {
     image_url: "",
 
     category: "Pulutan",
+
+    image_file: null,
   });
 
   const handleAddNewItem = (e) => {
@@ -92,8 +94,20 @@ export default function MenuGrid({ items, onAdd, onAddNewItem }) {
       price: Number(newItem.price),
     };
 
-    if (onAddNewItem) {
-      onAddNewItem(submittedItem);
+    // Handle image file if selected
+    if (newItem.image_file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        submittedItem.image_url = reader.result;
+        if (onAddNewItem) {
+          onAddNewItem(submittedItem);
+        }
+      };
+      reader.readAsDataURL(newItem.image_file);
+    } else {
+      if (onAddNewItem) {
+        onAddNewItem(submittedItem);
+      }
     }
 
     setIsAdding(false);
@@ -108,6 +122,8 @@ export default function MenuGrid({ items, onAdd, onAddNewItem }) {
       image_url: "",
 
       category: "Pulutan",
+
+      image_file: null,
     });
   };
 
@@ -257,18 +273,59 @@ export default function MenuGrid({ items, onAdd, onAddNewItem }) {
 
               <div>
                 <label className="block text-xs font-bold text-ocean-700 uppercase mb-1">
-                  Image URL (Optional)
+                  Image
                 </label>
 
-                <input
-                  type="url"
-                  className="w-full px-4 py-3 rounded-xl bg-ocean-50 border border-ocean-100 focus:outline-none focus:ring-2 focus:ring-palm"
-                  value={newItem.image_url}
-                  onChange={(e) =>
-                    setNewItem({ ...newItem, image_url: e.target.value })
-                  }
-                  placeholder="https://..."
-                />
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="w-full px-4 py-3 rounded-xl bg-ocean-50 border border-ocean-100 focus:outline-none focus:ring-2 focus:ring-palm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-palm file:text-white hover:file:bg-palm/80"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setNewItem({
+                          ...newItem,
+                          image_file: file,
+                          image_url: "", // Clear URL when file is selected
+                        });
+                      }
+                    }}
+                  />
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-ocean-200"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="bg-white px-2 text-ocean-400 font-medium">
+                        OR
+                      </span>
+                    </div>
+                  </div>
+
+                  <input
+                    type="url"
+                    className="w-full px-4 py-3 rounded-xl bg-ocean-50 border border-ocean-100 focus:outline-none focus:ring-2 focus:ring-palm"
+                    value={newItem.image_url}
+                    onChange={(e) =>
+                      setNewItem({
+                        ...newItem,
+                        image_url: e.target.value,
+                        image_file: null, // Clear file when URL is entered
+                      })
+                    }
+                    placeholder="https://..."
+                  />
+                </div>
+
+                {newItem.image_file && (
+                  <div className="mt-2 p-2 bg-ocean-50 rounded-lg">
+                    <p className="text-xs text-ocean-600 font-medium">
+                      Selected: {newItem.image_file.name}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <button
