@@ -241,7 +241,9 @@ export default function CustomerTableLanding() {
           className="flex items-center gap-2 px-4 py-2 bg-white/40 backdrop-blur-md rounded-xl text-ocean-700 font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all shadow-sm border border-white/60 group"
         >
           <span className="text-xs uppercase tracking-widest">Log out</span>
-          <span className="text-sm group-hover:translate-x-1 transition-transform">🚪</span>
+          <span className="text-sm group-hover:translate-x-1 transition-transform">
+            🚪
+          </span>
         </button>
       </div>
       <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 py-8 sm:py-12 flex-1 flex flex-col mt-6 sm:mt-0">
@@ -265,81 +267,68 @@ export default function CustomerTableLanding() {
           </div>
         ) : (
           <>
-            {/* Show a "View My Orders" button if they have active orders */}
-            {JSON.parse(localStorage.getItem("my_active_orders") || "[]").length > 0 && (
-              <div className="flex justify-center mb-8 animate-fade-in-up">
-                <button
-                  onClick={() => setIsDrawerOpen(true)}
-                  className="bg-palm text-white font-black px-6 py-3 rounded-2xl shadow-lg shadow-palm/30 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
-                >
-                  <span className="text-xl">🧾</span>
-                  <span>View My Orders</span>
-                </button>
-              </div>
-            )}
-            
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 w-full max-w-3xl mx-auto">
               {tables.map((t, i) => {
-                  const vibe = TABLE_VIBES[i % TABLE_VIBES.length];
-                  const status = getTableStatus(t);
+                const vibe = TABLE_VIBES[i % TABLE_VIBES.length];
+                const status = getTableStatus(t);
 
-              const isTaken = false; // Never taken anymore
-              const isMySession = status === "my_session";
-              const isPinProtected = status === "pin_protected";
+                const isTaken = false; // Never taken anymore
+                const isMySession = status === "my_session";
+                const isPinProtected = status === "pin_protected";
 
-              // Only taken tables are blocked, but we never have taken tables anymore
-              const isBlocked = false;
+                // Only taken tables are blocked, but we never have taken tables anymore
+                const isBlocked = false;
 
-              return (
-                <div
-                  key={t.id}
-                  className="relative group bg-white/95 rounded-[2rem] sm:rounded-[2.5rem] border-2 border-white shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl overflow-hidden flex flex-col"
-                >
-                  <Link
-                    to={`/order/${t.slug}`}
-                    className="block flex-1"
-                    onClick={(e) => handleTableClick(e, t, false)}
+                return (
+                  <div
+                    key={t.id}
+                    className="relative group bg-white/95 rounded-[2rem] sm:rounded-[2.5rem] border-2 border-white shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl overflow-hidden flex flex-col"
                   >
-                    <div
-                      className={`p-4 sm:p-8 pb-6 sm:pb-10 text-center bg-gradient-to-br ${vibe.gradient} h-full`}
+                    <Link
+                      to={`/order/${t.slug}`}
+                      className="block flex-1"
+                      onClick={(e) => handleTableClick(e, t, false)}
                     >
-                      <span
-                        className={`text-4xl sm:text-6xl mb-2 sm:mb-4 block transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6`}
-                      >
-                        {isPinProtected ? "🔑" : vibe.emoji}
-                      </span>
-                      <span className="text-ocean-950 font-black text-lg sm:text-2xl tracking-tight block">
-                        {t.name}
-                      </span>
-                      <p
-                        className={`text-xs sm:text-sm font-bold mt-1 sm:mt-2 tracking-wide uppercase opacity-70 ${
-                          isPinProtected ? "text-amber-600" : vibe.accent
-                        }`}
-                      >
-                        {isPinProtected ? "Your Table" : vibe.tagline}
-                      </p>
-
                       <div
-                        className={`mt-3 sm:mt-6 inline-flex items-center gap-2 rounded-2xl px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${
-                          isMySession
-                            ? "bg-palm text-white border-2 border-palm/20 shadow-[0_0_20px_rgba(20,83,45,0.3)]"
-                            : isPinProtected
-                              ? "bg-amber-50 text-amber-700 border-2 border-amber-200 group-hover:bg-amber-500 group-hover:text-white"
-                              : "bg-white/90 text-ocean-800 border-2 border-ocean-100/50 group-hover:bg-ocean-600 group-hover:text-white group-hover:border-ocean-400"
-                        }`}
+                        className={`p-4 sm:p-8 pb-6 sm:pb-10 text-center bg-gradient-to-br ${vibe.gradient} h-full`}
                       >
-                        {isMySession
-                          ? "✨ View Order"
-                          : isPinProtected
-                            ? "🔑 Enter PIN"
-                            : "Select this table"}
+                        <span
+                          className={`text-4xl sm:text-6xl mb-2 sm:mb-4 block transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6`}
+                        >
+                          {isPinProtected ? "🔑" : vibe.emoji}
+                        </span>
+                        <span className="text-ocean-950 font-black text-lg sm:text-2xl tracking-tight block">
+                          {t.name}
+                        </span>
+                        <p
+                          className={`text-xs sm:text-sm font-bold mt-1 sm:mt-2 tracking-wide uppercase opacity-70 ${
+                            isPinProtected ? "text-amber-600" : vibe.accent
+                          }`}
+                        >
+                          {isPinProtected ? "Your Table" : vibe.tagline}
+                        </p>
+
+                        <div
+                          className={`mt-3 sm:mt-6 inline-flex items-center gap-2 rounded-2xl px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${
+                            isMySession
+                              ? "bg-palm text-white border-2 border-palm/20 shadow-[0_0_20px_rgba(20,83,45,0.3)]"
+                              : isPinProtected
+                                ? "bg-amber-50 text-amber-700 border-2 border-amber-200 group-hover:bg-amber-500 group-hover:text-white"
+                                : "bg-white/90 text-ocean-800 border-2 border-ocean-100/50 group-hover:bg-ocean-600 group-hover:text-white group-hover:border-ocean-400"
+                          }`}
+                        >
+                          {isMySession
+                            ? "✨ View Order"
+                            : isPinProtected
+                              ? "🔑 Enter PIN"
+                              : "Select this table"}
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
           </>
         )}
       </div>
