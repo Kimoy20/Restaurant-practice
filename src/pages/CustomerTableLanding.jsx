@@ -279,23 +279,7 @@ export default function CustomerTableLanding() {
             )}
             
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 w-full max-w-3xl mx-auto">
-              {tables
-                .filter((t) => {
-                  // Only filter if the user has an active session or PIN auth
-                  const myOrders = JSON.parse(localStorage.getItem("my_active_orders") || "[]");
-                  const pinAuth = JSON.parse(localStorage.getItem("pin_authenticated_tables") || "{}");
-                  
-                  const hasAnySession = myOrders.length > 0 || Object.keys(pinAuth).length > 0;
-                  
-                  if (!hasAnySession) return true; // Show all if they haven't picked a table yet
-                  
-                  // If they have picked a table, only show THEIR tables
-                  const isMyOrder = myOrders.some((o) => o.tableId === t.slug || o.tableId === t.id);
-                  const isMyPin = pinAuth[t.id]?.authenticated || pinAuth[t.slug]?.authenticated;
-                  
-                  return isMyOrder || isMyPin;
-                })
-                .map((t, i) => {
+              {tables.map((t, i) => {
                   const vibe = TABLE_VIBES[i % TABLE_VIBES.length];
                   const status = getTableStatus(t);
 

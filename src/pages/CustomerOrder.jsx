@@ -696,7 +696,7 @@ export default function CustomerOrder() {
             </h1>
 
             {/* Customer Name Input - Only for Owners */}
-            {!isCustomer && (
+            {userRole === "owner" && (
               <div className="flex items-center gap-1 sm:gap-2 bg-white/60 backdrop-blur-sm rounded-xl px-2 sm:px-4 py-2 border border-white/40">
                 <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-ocean-600">
                   Customer:
@@ -754,7 +754,7 @@ export default function CustomerOrder() {
             </button>
 
             {/* Burger Menu Button - Only for Owners */}
-            {!isCustomer && (
+            {userRole === "owner" && (
               <button
                 onClick={() => setDrawerOpen(true)}
                 className="w-8 h-8 sm:w-12 sm:h-12 rounded-2xl bg-white/40 backdrop-blur-xl flex flex-col items-center justify-center gap-1 hover:bg-ocean-50/80 transition-all border border-ocean-100/50 group shadow-sm ml-1 sm:ml-2"
