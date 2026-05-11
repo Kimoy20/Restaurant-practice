@@ -83,6 +83,15 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
   const [newCategory, setNewCategory] = useState("");
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  const [editItem, setEditItem] = useState({
+    name: "",
+    description: "",
+    price: "",
+    image_url: "",
+    category: "Pulutan",
+    image_file: null,
+  });
 
   const handleAddNewItem = (e) => {
     e.preventDefault();
@@ -160,6 +169,58 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
     setDeleteConfirm(null);
   };
 
+  const handleEditItem = (item) => {
+    setEditingItem(item);
+    setEditItem({
+      name: item.name,
+      description: item.description || "",
+      price: item.price.toString(),
+      image_url: item.image_url || "",
+      category: item.category || "Pulutan",
+      image_file: null,
+    });
+  };
+
+  const handleUpdateItem = (e) => {
+    e.preventDefault();
+    if (!editItem.name || !editItem.price || !editingItem) return;
+
+    const updatedItem = {
+      ...editingItem,
+      name: editItem.name,
+      description: editItem.description,
+      price: Number(editItem.price),
+      image_url: editItem.image_url,
+      category: editItem.category,
+    };
+
+    // Handle image file if selected
+    if (editItem.image_file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updatedItem.image_url = reader.result;
+        if (onAddNewItem) {
+          onAddNewItem(updatedItem); // Use same callback for updates
+        }
+      };
+      reader.readAsDataURL(editItem.image_file);
+    } else {
+      if (onAddNewItem) {
+        onAddNewItem(updatedItem); // Use same callback for updates
+      }
+    }
+
+    setEditingItem(null);
+    setEditItem({
+      name: "",
+      description: "",
+      price: "",
+      image_url: "",
+      category: "Pulutan",
+      image_file: null,
+    });
+  };
+
   const byCategory = items.reduce((acc, item) => {
     const cat = item.category || "Other";
 
@@ -212,17 +273,6 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
 
   return (
     <div className="w-full space-y-10 pb-8 relative">
-      <div className="flex justify-end px-4 sm:px-6 pb-4">
-        {onAddNewItem && (
-          <button
-            onClick={() => setIsAdding(true)}
-            className="bg-white/80 backdrop-blur-md text-emerald-600 border-2 border-emerald-500/30 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 font-black px-4 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-sm transition-all text-sm"
-          >
-            + Add Menu Item
-          </button>
-        )}
-      </div>
-
       {isAdding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ocean-950/40 backdrop-blur-sm">
           <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-md w-full border border-ocean-100 animate-fade-in-up">
@@ -417,20 +467,31 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
           {/* Category Header */}
 
           <div className="px-4 sm:px-6 mb-8 scroll-mt-24">
-            <div className="flex items-center gap-4 mb-3">
-              <span className="text-3xl sm:text-4xl">
-                {CATEGORY_EMOJIS[category] || "🍽️"}
-              </span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <span className="text-3xl sm:text-4xl">
+                  {CATEGORY_EMOJIS[category] || "🍽️"}
+                </span>
 
-              <div>
-                <h2 className="heading-display text-2xl sm:text-5xl font-extrabold bg-gradient-to-r from-ocean-800 via-ocean-600 to-palm bg-clip-text text-transparent">
-                  {category}
-                </h2>
+                <div>
+                  <h2 className="heading-display text-2xl sm:text-5xl font-extrabold bg-gradient-to-r from-ocean-800 via-ocean-600 to-palm bg-clip-text text-transparent">
+                    {category}
+                  </h2>
 
-                <p className="text-sand-600 text-sm font-semibold tracking-wide uppercase mt-1">
-                  {list.length} {list.length === 1 ? "dish" : "available"}
-                </p>
+                  <p className="text-sand-600 text-sm font-semibold tracking-wide uppercase mt-1">
+                    {list.length} {list.length === 1 ? "dish" : "available"}
+                  </p>
+                </div>
               </div>
+
+              {onAddNewItem && category === "Pulutan" && (
+                <button
+                  onClick={() => setIsAdding(true)}
+                  className="bg-white/80 backdrop-blur-md text-emerald-600 border-2 border-emerald-500/30 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 font-black px-4 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-sm transition-all text-sm"
+                >
+                  + Add Menu Item
+                </button>
+              )}
             </div>
 
             <div className="h-1.5 w-24 bg-gradient-to-r from-ocean-500 via-ocean-300 to-transparent rounded-full shadow-sm" />
@@ -459,26 +520,38 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
                     </div>
                   )}
 
-                  {/* Glass Price Tag */}
-
-                  <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-white/80 backdrop-blur-md px-3 py-1 sm:px-4 sm:py-1.5 rounded-full shadow-sm border border-white/50">
+                  {/* Price Tag - positioned at left side bottom of image */}
+                  <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 bg-white/80 backdrop-blur-md px-3 py-1 sm:px-4 sm:py-1.5 rounded-full shadow-sm border border-white/50">
                     <span className="text-ocean-900 font-black text-sm sm:text-base">
                       ₱{Number(item.price).toFixed(0)}
                     </span>
                   </div>
 
-                  {/* Delete Button - Only show for owner */}
+                  {/* Action Buttons - Only show for owner */}
                   {onDeleteItem && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteItem(item.id)}
-                      className="absolute top-3 left-3 sm:top-4 sm:left-4 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-500/90 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-sm border border-white/50 group"
-                      title="Delete item"
-                    >
-                      <span className="text-sm sm:text-base font-bold group-hover:scale-110 transition-transform">
-                        🗑️
-                      </span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleEditItem(item)}
+                        className="absolute top-3 left-3 sm:top-4 sm:left-4 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-500/90 backdrop-blur-md flex items-center justify-center text-white hover:bg-blue-600 transition-all shadow-sm border border-white/50 group"
+                        title="Edit item"
+                      >
+                        <span className="text-sm sm:text-base font-bold group-hover:scale-110 transition-transform">
+                          ✏️
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="absolute top-3 left-14 sm:top-4 sm:left-14 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-500/90 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-sm border border-white/50 group"
+                        title="Delete item"
+                      >
+                        <span className="text-sm sm:text-base font-bold group-hover:scale-110 transition-transform">
+                          🗑️
+                        </span>
+                      </button>
+                    </>
                   )}
                 </div>
 
@@ -550,6 +623,170 @@ export default function MenuGrid({ items, onAdd, onAddNewItem, onDeleteItem }) {
           </div>
         </section>
       ))}
+
+      {/* Edit Modal */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ocean-950/40 backdrop-blur-sm">
+          <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-md w-full border border-ocean-100 animate-fade-in-up">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black text-ocean-950">Edit Item</h3>
+
+              <button
+                onClick={() => setEditingItem(null)}
+                className="text-ocean-300 hover:text-red-500 font-bold text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateItem} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-ocean-700 uppercase mb-1">
+                  Name
+                </label>
+
+                <input
+                  required
+                  type="text"
+                  className="w-full px-4 py-3 rounded-xl bg-ocean-50 border border-ocean-100 focus:outline-none focus:ring-2 focus:ring-palm"
+                  value={editItem.name}
+                  onChange={(e) =>
+                    setEditItem({ ...editItem, name: e.target.value })
+                  }
+                  placeholder="Dish name..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-ocean-700 uppercase mb-1">
+                    Price (₱)
+                  </label>
+
+                  <input
+                    required
+                    type="number"
+                    className="w-full px-4 py-3 rounded-xl bg-ocean-50 border border-ocean-100 focus:outline-none focus:ring-2 focus:ring-palm"
+                    value={editItem.price}
+                    onChange={(e) =>
+                      setEditItem({ ...editItem, price: e.target.value })
+                    }
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-ocean-700 uppercase mb-1">
+                    Category
+                  </label>
+
+                  <input
+                    type="text"
+                    list="category-list"
+                    className="w-full px-4 py-3 rounded-xl bg-ocean-50 border border-ocean-100 focus:outline-none focus:ring-2 focus:ring-palm font-medium"
+                    value={editItem.category}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setEditItem({ ...editItem, category: value });
+                    }}
+                    placeholder="Type or select category..."
+                  />
+
+                  <datalist id="category-list">
+                    <option value="Pulutan" />
+                    <option value="Main" />
+                    <option value="Drinks" />
+                    <option value="Other" />
+                    {customCategories.map((cat) => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-ocean-700 uppercase mb-1">
+                  Description
+                </label>
+
+                <input
+                  type="text"
+                  className="w-full px-4 py-3 rounded-xl bg-ocean-50 border border-ocean-100 focus:outline-none focus:ring-2 focus:ring-palm"
+                  value={editItem.description}
+                  onChange={(e) =>
+                    setEditItem({ ...editItem, description: e.target.value })
+                  }
+                  placeholder="Short description..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-ocean-700 uppercase mb-1">
+                  Image
+                </label>
+
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="w-full px-4 py-3 rounded-xl bg-ocean-50 border border-ocean-100 focus:outline-none focus:ring-2 focus:ring-palm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-palm file:text-white hover:file:bg-palm/80"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setEditItem({
+                          ...editItem,
+                          image_file: file,
+                          image_url: "",
+                        });
+                      }
+                    }}
+                  />
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-ocean-200"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="bg-white px-2 text-ocean-400 font-medium">
+                        OR
+                      </span>
+                    </div>
+                  </div>
+
+                  <input
+                    type="url"
+                    className="w-full px-4 py-3 rounded-xl bg-ocean-50 border border-ocean-100 focus:outline-none focus:ring-2 focus:ring-palm"
+                    value={editItem.image_url}
+                    onChange={(e) =>
+                      setEditItem({
+                        ...editItem,
+                        image_url: e.target.value,
+                        image_file: null,
+                      })
+                    }
+                    placeholder="https://..."
+                  />
+                </div>
+
+                {editItem.image_file && (
+                  <div className="mt-2 p-2 bg-ocean-50 rounded-lg">
+                    <p className="text-xs text-ocean-600 font-medium">
+                      Selected: {editItem.image_file.name}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full btn-primary py-4 text-sm font-black mt-2"
+              >
+                Update Item
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       {deleteConfirm && (
