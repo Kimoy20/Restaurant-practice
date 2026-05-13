@@ -127,95 +127,95 @@ export default function SuperAdminDashboard() {
         </header>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
-          <div className="p-6 rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-md">
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Pending</p>
-            <p className="text-3xl font-black text-amber-400">{stats.pendingOwners}</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-10">
+          <div className="p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-md">
+            <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Pending</p>
+            <p className="text-2xl md:text-3xl font-black text-amber-400">{stats.pendingOwners}</p>
           </div>
-          <div className="p-6 rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-md">
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Owners</p>
-            <p className="text-3xl font-black text-palm">{stats.approvedOwners}</p>
+          <div className="p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-md">
+            <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Owners</p>
+            <p className="text-2xl md:text-3xl font-black text-palm">{stats.approvedOwners}</p>
           </div>
-          <div className="p-6 rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-md">
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Customers</p>
-            <p className="text-3xl font-black text-ocean-400">{stats.customers}</p>
+          <div className="p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-md">
+            <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Customers</p>
+            <p className="text-2xl md:text-3xl font-black text-ocean-400">{stats.customers}</p>
           </div>
-          <div className="p-6 rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-md">
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Total</p>
-            <p className="text-3xl font-black text-white">{stats.total}</p>
+          <div className="p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-md">
+            <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Total</p>
+            <p className="text-2xl md:text-3xl font-black text-white">{stats.total}</p>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex flex-wrap gap-2 mb-8 bg-white/5 p-2 rounded-2xl w-fit border border-white/10 backdrop-blur-md">
+        <div className="flex flex-row overflow-x-auto pb-2 gap-2 mb-8 bg-white/5 p-2 rounded-2xl w-full md:w-fit border border-white/10 backdrop-blur-md no-scrollbar">
           <button 
             onClick={() => setActiveTab("pending")}
-            className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === "pending" ? "bg-palm text-white" : "text-white/40 hover:text-white"}`}
+            className={`whitespace-nowrap px-5 py-3 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all ${activeTab === "pending" ? "bg-palm text-white" : "text-white/40 hover:text-white"}`}
           >
             Pending ({pendingList.length})
           </button>
           <button 
             onClick={() => setActiveTab("approved")}
-            className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === "approved" ? "bg-palm text-white" : "text-white/40 hover:text-white"}`}
+            className={`whitespace-nowrap px-5 py-3 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all ${activeTab === "approved" ? "bg-palm text-white" : "text-white/40 hover:text-white"}`}
           >
             Owners ({approvedList.length})
           </button>
           <button 
             onClick={() => setActiveTab("customers")}
-            className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === "customers" ? "bg-palm text-white" : "text-white/40 hover:text-white"}`}
+            className={`whitespace-nowrap px-5 py-3 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all ${activeTab === "customers" ? "bg-palm text-white" : "text-white/40 hover:text-white"}`}
           >
             Customers ({customerList.length})
           </button>
         </div>
 
         {/* User List */}
-        <div className="bg-white/[0.02] border border-white/10 rounded-[3rem] p-8 md:p-12 backdrop-blur-xl">
+        <div className="bg-white/[0.02] border border-white/10 rounded-[2rem] md:rounded-[3rem] p-5 md:p-12 backdrop-blur-xl">
           {message && (
-            <div className="mb-8 p-4 bg-palm/20 border border-palm/40 text-white rounded-2xl font-bold text-center animate-bounce-short text-sm">
+            <div className="mb-8 p-4 bg-palm/20 border border-palm/40 text-white rounded-2xl font-bold text-center animate-bounce-short text-[11px] md:text-sm">
               {message}
             </div>
           )}
 
           {error && (
-            <div className="mb-8 p-6 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl font-bold text-center text-sm">
+            <div className="mb-8 p-6 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl font-bold text-center text-[11px] md:text-sm">
               {error}
             </div>
           )}
 
-          <div className="grid gap-4">
+          <div className="grid gap-3 md:gap-4">
             {displayList.length === 0 ? (
-              <div className="py-20 text-center opacity-40">
-                <p className="text-6xl mb-4">🏝️</p>
-                <p className="font-bold">No users in this category.</p>
+              <div className="py-12 md:py-20 text-center opacity-40">
+                <p className="text-4xl md:text-6xl mb-4">🏝️</p>
+                <p className="font-bold text-sm">No users in this category.</p>
               </div>
             ) : (
               displayList.map((user) => (
                 <div 
                   key={user.id} 
-                  className="bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-[2rem] p-6 flex flex-col md:flex-row items-center justify-between gap-6 transition-all"
+                  className="bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6 transition-all"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl ${user.role === 'customer' ? 'bg-ocean-900' : 'bg-palm/20 text-palm'}`}>
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center text-lg md:text-xl ${user.role === 'customer' ? 'bg-ocean-900' : 'bg-palm/20 text-palm'}`}>
                       {user.role === 'customer' ? '🛒' : '👨‍🍳'}
                     </div>
-                    <div>
-                      <h3 className="font-black text-lg">{user.email}</h3>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-white/30">
-                        {user.role.toUpperCase()} • Joined {new Date(user.created_at || Date.now()).toLocaleDateString()}
+                    <div className="truncate">
+                      <h3 className="font-black text-sm md:text-lg truncate max-w-[180px] md:max-w-none">{user.email}</h3>
+                      <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-white/30">
+                        {user.role.toUpperCase()} • {new Date(user.created_at || Date.now()).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 w-full md:w-auto">
+                  <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
                     {activeTab === "pending" ? (
                       <>
-                        <button onClick={() => handleUpdateStatus(user.id, true)} className="flex-1 md:flex-none px-8 py-3 bg-palm text-white rounded-xl font-black text-xs hover:scale-105 transition-all">Approve</button>
-                        <button onClick={() => handleReject(user.id)} className="px-4 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500 hover:text-white transition-all">Reject</button>
+                        <button onClick={() => handleUpdateStatus(user.id, true)} className="flex-1 md:flex-none px-6 md:px-8 py-3 bg-palm text-white rounded-xl font-black text-[10px] md:text-xs hover:scale-105 transition-all">Approve</button>
+                        <button onClick={() => handleReject(user.id)} className="px-4 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500 hover:text-white transition-all text-xs">Reject</button>
                       </>
                     ) : (
                       <button 
                         onClick={() => handleReject(user.id)}
-                        className="flex-1 md:flex-none px-6 py-3 bg-white/5 text-red-400 border border-white/10 rounded-xl font-black text-xs hover:bg-red-500 hover:text-white transition-all"
+                        className="flex-1 md:flex-none px-5 md:px-6 py-3 bg-white/5 text-red-400 border border-white/10 rounded-xl font-black text-[10px] md:text-xs hover:bg-red-500 hover:text-white transition-all"
                       >
                         Delete User
                       </button>
