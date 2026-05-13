@@ -219,6 +219,28 @@ export default function CustomerOrder() {
       }
     };
     loadData();
+
+    // Subscribe to menu changes for real-time updates
+    let menuSubscription = null;
+    if (supabase) {
+      menuSubscription = supabase
+        .channel("menu_changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "menu_items" },
+          () => {
+            console.log("Menu changed in Supabase, refreshing...");
+            loadData();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      if (menuSubscription) {
+        supabase.removeChannel(menuSubscription);
+      }
+    };
   }, [tableId]);
 
   useEffect(() => {
@@ -290,13 +312,24 @@ export default function CustomerOrder() {
     // If we have a supabase connection, try to save it there first
     if (supabase && !isCustomer) {
       try {
-        console.log("Saving new menu item to Supabase:", newItem);
-        // Remove the temporary 'custom-' ID so Supabase can generate a real one
-        const { id, ...itemData } = newItem;
+        console.log("Saving/Updating menu item in Supabase:", newItem);
         
+        // Prepare data for Supabase
+        const itemData = { ...newItem };
+        
+        // If it's a new item (has 'custom-' ID), let Supabase generate a UUID
+        if (String(itemData.id).startsWith("custom-")) {
+          delete itemData.id;
+        }
+        
+        // Ensure is_available is true for new items
+        if (itemData.is_available === undefined) {
+          itemData.is_available = true;
+        }
+
         const { data, error } = await supabase
           .from("menu_items")
-          .insert([itemData])
+          .upsert([itemData])
           .select()
           .single();
 
@@ -628,9 +661,40 @@ export default function CustomerOrder() {
     setIsCheckingOut(true);
   };
 
-  const finalizeCheckout = () => {
+  const finalizeCheckout = async () => {
     // Record this order globally for sales tracking
     if (submittedOrder) {
+      // 1. Save to Supabase for cloud sync
+      if (supabase) {
+        try {
+          const { error } = await supabase
+            .from("completed_orders")
+            .insert([{
+              id: submittedOrder.id,
+              table_id: submittedOrder.tableId,
+              table_name: submittedOrder.tableName,
+              customer_name: submittedOrder.customerName,
+              total: submittedOrder.total,
+              items: submittedOrder.items,
+              timestamp: submittedOrder.timestamp
+            }]);
+          
+          if (error) console.error("Error saving completed order to Supabase:", error);
+          else console.log("Completed order synced to cloud ✅");
+
+          // Also update any active orders for this table in Supabase to 'completed'
+          await supabase
+            .from("orders")
+            .update({ status: 'completed' })
+            .eq('table_id', table.id)
+            .in('status', ['pending', 'preparing', 'ready']);
+
+        } catch (err) {
+          console.error("Unexpected error syncing checkout:", err);
+        }
+      }
+
+      // 2. Fallback/Local backup
       const globalOrders = JSON.parse(
         localStorage.getItem("global_completed_orders") || "[]",
       );

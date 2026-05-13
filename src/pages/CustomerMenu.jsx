@@ -82,6 +82,28 @@ export default function CustomerMenu() {
       }
     };
     loadData();
+
+    // Subscribe to menu changes for real-time updates
+    let menuSubscription = null;
+    if (supabase) {
+      menuSubscription = supabase
+        .channel("menu_changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "menu_items" },
+          () => {
+            console.log("Menu items changed, refreshing...");
+            loadData();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      if (menuSubscription) {
+        supabase.removeChannel(menuSubscription);
+      }
+    };
   }, []);
 
   useEffect(() => {

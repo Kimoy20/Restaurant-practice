@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { savePin, clearPin, fetchAllPins } from "./lib/tablePins";
+import { supabase } from "./lib/supabase";
 
 export default function AdminDrawer({ open, onClose }) {
   const [stats, setStats] = useState({ totalOrders: 0, totalIncome: 0 });
@@ -10,28 +11,80 @@ export default function AdminDrawer({ open, onClose }) {
   const [pinInputs, setPinInputs] = useState({});
 
   useEffect(() => {
-    if (open) {
-      const globalOrders = JSON.parse(
-        localStorage.getItem("global_completed_orders") || "[]",
-      );
-      console.log("Debug - Global Orders:", globalOrders); // Debug line
-      const income = globalOrders.reduce(
-        (sum, order) => sum + (order.total || 0),
-        0,
-      );
-      setStats({
-        totalOrders: globalOrders.length,
-        totalIncome: income,
-      });
-      setHistory(globalOrders.reverse()); // Show newest first
+    let orderSubscription = null;
 
-      // Load PINs
+    if (open) {
+      loadSalesData();
       loadPins();
+
+      // Subscribe to new completed orders for real-time dashboard updates
+      if (supabase) {
+        orderSubscription = supabase
+          .channel("completed_orders_sync")
+          .on(
+            "postgres_changes",
+            { event: "INSERT", schema: "public", table: "completed_orders" },
+            () => {
+              console.log("New order completed, updating dashboard...");
+              loadSalesData();
+            }
+          )
+          .subscribe();
+      }
     } else {
       setShowHistory(false);
       setShowPinManagement(false);
     }
+
+    return () => {
+      if (orderSubscription) supabase.removeChannel(orderSubscription);
+    };
   }, [open]);
+
+  const loadSalesData = async () => {
+    let globalOrders = [];
+
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("completed_orders")
+          .select("*")
+          .order("timestamp", { ascending: false });
+
+        if (!error && data) {
+          // Map Supabase columns to the camelCase keys used in the UI
+          globalOrders = data.map(o => ({
+            id: o.id,
+            tableId: o.table_id,
+            tableName: o.table_name,
+            customerName: o.customer_name,
+            total: Number(o.total),
+            items: o.items,
+            timestamp: o.timestamp
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching sales from Supabase:", err);
+      }
+    }
+
+    // Fallback to local storage if supabase failed or returned nothing
+    if (globalOrders.length === 0) {
+      const local = JSON.parse(localStorage.getItem("global_completed_orders") || "[]");
+      globalOrders = local.reverse();
+    }
+
+    const income = globalOrders.reduce(
+      (sum, order) => sum + (order.total || 0),
+      0,
+    );
+
+    setStats({
+      totalOrders: globalOrders.length,
+      totalIncome: income,
+    });
+    setHistory(globalOrders);
+  };
 
   const loadPins = async () => {
     const fetchedPins = await fetchAllPins();
@@ -292,20 +345,24 @@ export default function AdminDrawer({ open, onClose }) {
           {/* Footer */}
           {!showHistory && !showPinManagement && (
             <div className="pt-8 border-t border-white/10 mt-auto flex flex-col gap-4">
-              <button
-                onClick={() => {
-                  if (
-                    confirm("Are you sure you want to clear all sales data?")
-                  ) {
-                    localStorage.removeItem("global_completed_orders");
-                    setStats({ totalOrders: 0, totalIncome: 0 });
-                    setHistory([]);
-                  }
-                }}
-                className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-ocean-500 hover:text-red-400 transition-colors"
-              >
-                Clear Sales History
-              </button>
+                <button
+                  onClick={async () => {
+                    if (
+                      confirm("Are you sure you want to clear all sales data? This will delete records from the cloud too!")
+                    ) {
+                      if (supabase) {
+                        const { error } = await supabase.from("completed_orders").delete().neq("id", "0");
+                        if (error) console.error("Error clearing Supabase history:", error);
+                      }
+                      localStorage.removeItem("global_completed_orders");
+                      setStats({ totalOrders: 0, totalIncome: 0 });
+                      setHistory([]);
+                    }
+                  }}
+                  className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-ocean-500 hover:text-red-400 transition-colors"
+                >
+                  Clear Sales History
+                </button>
               <button
                 onClick={() => {
                   localStorage.removeItem("current_user");

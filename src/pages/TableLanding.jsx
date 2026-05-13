@@ -219,6 +219,55 @@ export default function TableLanding() {
     };
 
     loadData();
+
+    // Subscribe to table and order changes for real-time occupancy updates
+    let tableSubscription = null;
+    let orderSubscription = null;
+    let pinSubscription = null;
+
+    if (supabase) {
+      tableSubscription = supabase
+        .channel("table_changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "tables" },
+          () => {
+            console.log("Tables changed, refreshing...");
+            loadData();
+          }
+        )
+        .subscribe();
+
+      orderSubscription = supabase
+        .channel("order_changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "orders" },
+          () => {
+            console.log("Orders changed, refreshing table statuses...");
+            loadData();
+          }
+        )
+        .subscribe();
+
+      pinSubscription = supabase
+        .channel("pin_changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "table_pins" },
+          () => {
+            console.log("Pins changed, refreshing...");
+            loadData();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      if (tableSubscription) supabase.removeChannel(tableSubscription);
+      if (orderSubscription) supabase.removeChannel(orderSubscription);
+      if (pinSubscription) supabase.removeChannel(pinSubscription);
+    };
   }, []);
 
   const handleManualStatusChange = (tableId, status) => {
