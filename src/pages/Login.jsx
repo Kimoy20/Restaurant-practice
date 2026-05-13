@@ -9,6 +9,8 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [adminClickCount, setAdminClickCount] = useState(0);
+  const [isAdminMode, setIsAdminMode] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -44,6 +46,7 @@ export default function Login() {
               email,
               password: hashedPassword,
               role,
+              is_approved: role === "customer" ? true : false, // Customers auto-approved, owners need confirmation
             },
           ])
           .select();
@@ -51,6 +54,14 @@ export default function Login() {
         if (error) {
           console.error("Registration error:", error);
           setError(`Registration failed: ${error.message}`);
+          return;
+        }
+
+        if (role === "owner") {
+          setError("Account created! Please wait for admin confirmation before you can log in.");
+          setIsRegister(false);
+          setEmail("");
+          setPassword("");
           return;
         }
 
@@ -92,8 +103,14 @@ export default function Login() {
           return;
         }
 
+        // Check for admin/owner approval
+        if (user.role === "owner" && !user.is_approved && !isAdminMode) {
+          setError("Your account is pending admin approval. Please wait for the admin to confirm your business.");
+          return;
+        }
+
         // Check if the role matches the registered role
-        if (user.role !== role) {
+        if (user.role !== role && !isAdminMode) {
           setError(
             `This account is registered as an ${user.role}. Please select the correct role.`,
           );
@@ -101,10 +118,15 @@ export default function Login() {
         }
 
         localStorage.setItem("current_user", email);
-        localStorage.setItem("user_role", role);
-        navigate(role === "customer" ? "/customer-tables" : "/table", {
-          replace: true,
-        });
+        localStorage.setItem("user_role", isAdminMode ? "super_admin" : role);
+        
+        if (isAdminMode) {
+          navigate("/super-admin-dashboard", { replace: true });
+        } else {
+          navigate(role === "customer" ? "/customer-tables" : "/table", {
+            replace: true,
+          });
+        }
       }
     } catch (err) {
       console.error("Submit error:", err);
@@ -120,22 +142,38 @@ export default function Login() {
 
       <div className="relative w-full max-w-md bg-white/80 backdrop-blur-xl border border-white/40 shadow-island-lg rounded-[2.5rem] p-8 sm:p-10 z-10">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-ocean-500 to-ocean-700 shadow-lg mb-6">
+          <button 
+            type="button"
+            onClick={() => {
+              const newCount = adminClickCount + 1;
+              setAdminClickCount(newCount);
+              if (newCount >= 5) {
+                setIsAdminMode(true);
+                setRole("owner");
+                setError("Super Admin Access Unlocked 🔓");
+              }
+            }}
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-ocean-500 to-ocean-700 shadow-lg mb-6 transition-transform active:scale-90"
+          >
             <span className="text-3xl">🌴</span>
-          </div>
+          </button>
           <h1 className="heading-display text-3xl font-extrabold text-ocean-950 mb-2">
-            {role === null
-              ? "Welcome to Siaro Kaw"
-              : isRegister
-                ? "Create Account"
-                : "Welcome Back"}
+            {isAdminMode 
+              ? "Super Admin Login"
+              : role === null
+                ? "Welcome to Siaro Kaw"
+                : isRegister
+                  ? "Create Account"
+                  : "Welcome Back"}
           </h1>
           <p className="text-sand-600 font-medium">
-            {role === null
-              ? "Who is visiting us today?"
-              : isRegister
-                ? "Join Siaro Kaw Kitchen Staff"
-                : "Sign in to access the dashboard"}
+            {isAdminMode
+              ? "Confirm your identity, Kim."
+              : role === null
+                ? "Who is visiting us today?"
+                : isRegister
+                  ? "Join Siaro Kaw Kitchen Staff"
+                  : "Sign in to access the dashboard"}
           </p>
         </div>
 

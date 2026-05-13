@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import CustomerMenu from "./pages/CustomerMenu";
 import CustomerTableLanding from "./pages/CustomerTableLanding";
 import AboutBusiness from "./pages/AboutBusiness";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       <Route path="/about" element={<AboutBusiness />} />
       <Route path="/login" element={<Login />} />
       <Route path="/kitchen" element={<KitchenDisplay />} />
+      <Route path="/super-admin-dashboard" element={<SuperAdminDashboard />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

@@ -317,19 +317,22 @@ export default function CustomerOrder() {
         // Prepare data for Supabase
         const itemData = { ...newItem };
         
+        // Remove 'image_file' as it doesn't exist in the database schema
+        const { image_file, ...dataToSync } = itemData;
+        
         // If it's a new item (has 'custom-' ID), let Supabase generate a UUID
-        if (String(itemData.id).startsWith("custom-")) {
-          delete itemData.id;
+        if (String(dataToSync.id).startsWith("custom-")) {
+          delete dataToSync.id;
         }
         
         // Ensure is_available is true for new items
-        if (itemData.is_available === undefined) {
-          itemData.is_available = true;
+        if (dataToSync.is_available === undefined) {
+          dataToSync.is_available = true;
         }
 
         const { data, error } = await supabase
           .from("menu_items")
-          .upsert([itemData])
+          .upsert([dataToSync])
           .select()
           .single();
 
